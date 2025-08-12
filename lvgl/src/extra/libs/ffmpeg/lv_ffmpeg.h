@@ -32,9 +32,6 @@ typedef struct {
     lv_img_dsc_t imgdsc;
     bool auto_restart;
     struct ffmpeg_context_s * ffmpeg_ctx;
-    
-    int64_t audio_clock; // 音频主时钟
-    int64_t video_clock; // 视频时钟
 } lv_ffmpeg_player_t;
 
 typedef enum {

@@ -16,9 +16,6 @@
 #include <libavutil/timestamp.h>
 #include <libswscale/swscale.h>
 
-#include "platform/audio_alsa.h"
-#include "libswresample/swresample.h"
-
 /*********************
  *      DEFINES
  *********************/
@@ -57,16 +54,6 @@ struct ffmpeg_context_s {
     int video_dst_linesize[4];
     enum AVPixelFormat video_dst_pix_fmt;
     bool has_alpha;
-
-    AVCodecContext * audio_dec_ctx;
-    AVStream * audio_stream;
-    int audio_stream_idx;
-    SwrContext * swr_ctx;
-    uint8_t * audio_dst_data;
-    int audio_dst_linesize;
-    int audio_dst_channels;
-    int audio_dst_sample_rate;
-    enum AVSampleFormat audio_dst_sample_fmt;
 };
 
 #pragma pack(1)
@@ -96,7 +83,6 @@ static int ffmpeg_get_frame_refr_period(struct ffmpeg_context_s * ffmpeg_ctx);
 static uint8_t * ffmpeg_get_img_data(struct ffmpeg_context_s * ffmpeg_ctx);
 static int ffmpeg_update_next_frame(struct ffmpeg_context_s * ffmpeg_ctx);
 static int ffmpeg_output_video_frame(struct ffmpeg_context_s * ffmpeg_ctx);
-static int ffmpeg_output_audeo_frame(struct ffmpeg_context_s * ffmpeg_ctx);
 static bool ffmpeg_pix_fmt_has_alpha(enum AVPixelFormat pix_fmt);
 static bool ffmpeg_pix_fmt_is_yuv(enum AVPixelFormat pix_fmt);
 
@@ -486,51 +472,6 @@ failed:
     return ret;
 }
 
-static int ffmpeg_output_audio_frame(struct ffmpeg_context_s * ffmpeg_ctx)
-{
-    int ret = 0;
-    // 配置音频重采样
-    if(!ffmpeg_ctx->swr_ctx) {
-        ffmpeg_ctx->swr_ctx =
-            swr_alloc_set_opts(NULL, AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, 44100,
-                               av_get_default_channel_layout(ffmpeg_ctx->audio_dec_ctx->channels),
-                               ffmpeg_ctx->audio_dec_ctx->sample_fmt, ffmpeg_ctx->audio_dec_ctx->sample_rate, 0, NULL);
-        swr_init(ffmpeg_ctx->swr_ctx);
-    }
-
-    // 计算输出缓冲区大小
-    int out_samples = av_rescale_rnd(swr_get_delay(ffmpeg_ctx->swr_ctx, ffmpeg_ctx->audio_dec_ctx->sample_rate) +
-                                         ffmpeg_ctx->frame->nb_samples,
-                                     44100, ffmpeg_ctx->audio_dec_ctx->sample_rate, AV_ROUND_UP);
-
-    uint8_t * output;
-    ret = av_samples_alloc(&output, NULL, 1, out_samples, AV_SAMPLE_FMT_S16, 0);
-    if(ret < 0) {
-        LV_LOG_ERROR("Failed to allocate output samples");
-        return ret;
-    }
-
-    // 执行重采样
-    int sample_count = swr_convert(ffmpeg_ctx->swr_ctx, &output, out_samples, (const uint8_t **)ffmpeg_ctx->frame->data,
-                                   ffmpeg_ctx->frame->nb_samples);
-
-    if(sample_count < 0) {
-        LV_LOG_ERROR("Error during resampling: %s", av_err2str(sample_count));
-        av_freep(&output);
-        return sample_count;
-    }
-
-    // 写入音频数据
-    int data_size = sample_count * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
-    if(data_size > 0) {
-        audio_write(output, data_size);
-    }
-
-    av_freep(&output);
-
-    return 0;
-}
-
 static int ffmpeg_decode_packet(AVCodecContext * dec, const AVPacket * pkt,
                                 struct ffmpeg_context_s * ffmpeg_ctx)
 {
@@ -564,12 +505,6 @@ static int ffmpeg_decode_packet(AVCodecContext * dec, const AVPacket * pkt,
         /* write the frame data to output file */
         if(dec->codec->type == AVMEDIA_TYPE_VIDEO) {
             ret = ffmpeg_output_video_frame(ffmpeg_ctx);
-            //printf("[ff]video pack\n");
-        }
-
-        if(dec->codec->type == AVMEDIA_TYPE_AUDIO) {
-            ret = ffmpeg_output_audio_frame(ffmpeg_ctx);
-            //printf("[ff]audio pack\n");
         }
 
         av_frame_unref(ffmpeg_ctx->frame);
@@ -712,11 +647,6 @@ static int ffmpeg_update_next_frame(struct ffmpeg_context_s * ffmpeg_ctx)
                 is_image = true;
             }
 
-            if(ffmpeg_ctx->pkt.stream_index == ffmpeg_ctx->audio_stream_idx) {
-                ret = ffmpeg_decode_packet(ffmpeg_ctx->audio_dec_ctx, &(ffmpeg_ctx->pkt), ffmpeg_ctx);
-                is_image = false;
-            }
-
             av_packet_unref(&(ffmpeg_ctx->pkt));
 
             if(ret < 0) {
@@ -776,11 +706,6 @@ struct ffmpeg_context_s * ffmpeg_open_file(const char * path)
         ffmpeg_ctx->has_alpha = ffmpeg_pix_fmt_has_alpha(ffmpeg_ctx->video_dec_ctx->pix_fmt);
 
         ffmpeg_ctx->video_dst_pix_fmt = (ffmpeg_ctx->has_alpha ? AV_PIX_FMT_BGRA : AV_PIX_FMT_TRUE_COLOR);
-    }
-
-    if(ffmpeg_open_codec_context(&(ffmpeg_ctx->audio_stream_idx), &(ffmpeg_ctx->audio_dec_ctx), ffmpeg_ctx->fmt_ctx,
-                                 AVMEDIA_TYPE_AUDIO) >= 0) {
-        ffmpeg_ctx->audio_stream = ffmpeg_ctx->fmt_ctx->streams[ffmpeg_ctx->audio_stream_idx];
     }
 
 #if LV_FFMPEG_AV_DUMP_FORMAT != 0
@@ -899,20 +824,6 @@ static void lv_ffmpeg_player_frame_update_cb(lv_timer_t * timer)
         lv_ffmpeg_player_set_cmd(obj, player->auto_restart ? LV_FFMPEG_PLAYER_CMD_START : LV_FFMPEG_PLAYER_CMD_STOP);
         return;
     }
-    
-    /*
-    // 音视频同步逻辑
-    double diff = player->video_clock - player->audio_clock;
-
-    // 视频超前，延迟显示
-    if(diff > 0 && player->use_audio_sync) {
-        int delay = (int)(diff * 1000);
-        if(delay > 0) {
-            lv_timer_set_period(player->timer, delay);
-            return;
-        }
-    }
-    */
 
 #if LV_COLOR_DEPTH != 32
     if(player->ffmpeg_ctx->has_alpha) {
@@ -938,8 +849,6 @@ static void lv_ffmpeg_player_constructor(const lv_obj_class_t * class_p,
                                     FRAME_DEF_REFR_PERIOD, obj);
     lv_timer_pause(player->timer);
 
-    audio_init();
-
     LV_TRACE_OBJ_CREATE("finished");
 }
 
@@ -956,15 +865,6 @@ static void lv_ffmpeg_player_destructor(const lv_obj_class_t * class_p,
     }
 
     lv_img_cache_invalidate_src(lv_img_get_src(obj));
-
-    // 释放音频资源
-    if(player->ffmpeg_ctx && player->ffmpeg_ctx->swr_ctx) {
-        swr_free(&player->ffmpeg_ctx->swr_ctx);
-        player->ffmpeg_ctx->swr_ctx = NULL;
-    }
-
-    // 关闭音频设备
-    audio_release();
 
     ffmpeg_close(player->ffmpeg_ctx);
     player->ffmpeg_ctx = NULL;
