@@ -1,5 +1,5 @@
-#ifndef PROJ_PAGE_FILE_MANAGER_H
-#define PROJ_PAGE_FILE_MANAGER_H
+#ifndef PROJ_PAGE_IMAGE_H
+#define PROJ_PAGE_IMAGE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,7 +11,6 @@ extern "C" {
 #include "../lvgl/lvgl.h"
 #include "../lv_lib_100ask/lv_lib_100ask.h"
 #include "page_manager.h"
-#include "../platform/str_utils.h"
 
 /*********************
  *      DEFINES
@@ -24,7 +23,7 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-lv_obj_t * page_file_manager();
+lv_obj_t * page_image(char * src);
 
 /**********************
  *      MACROS

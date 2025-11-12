@@ -1,6 +1,6 @@
 #include "page_file_manager.h"
 
-static void file_explorer_simple_test_event_handler(lv_event_t * e);
+static void explorer_event_handler(lv_event_t * e);
 static void back_click(lv_event_t * e);
 
 lv_obj_t * page_file_manager()
@@ -10,7 +10,7 @@ lv_obj_t * page_file_manager()
     lv_obj_set_size(screen, lv_pct(100), lv_pct(100));
 
     lv_obj_t * file_explorer = lv_100ask_file_explorer_create(screen);
-    lv_obj_add_event_cb(file_explorer, file_explorer_simple_test_event_handler, 
+    lv_obj_add_event_cb(file_explorer, explorer_event_handler, 
 							LV_EVENT_VALUE_CHANGED, NULL);
     lv_100ask_file_explorer_open_dir(file_explorer, "/");
 
@@ -25,7 +25,7 @@ lv_obj_t * page_file_manager()
     return screen;
 }
 
-static void file_explorer_simple_test_event_handler(lv_event_t * e)
+static void explorer_event_handler(lv_event_t * e)
 {
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * obj       = lv_event_get_target(e);
@@ -33,7 +33,14 @@ static void file_explorer_simple_test_event_handler(lv_event_t * e)
     if(code == LV_EVENT_VALUE_CHANGED) {
         char * cur_path = lv_100ask_file_explorer_get_cur_path(obj);
         char * sel_fn   = lv_100ask_file_explorer_get_sel_fn(obj);
-        LV_LOG_USER("%s%s", cur_path, sel_fn);
+        char file_name[LV_100ASK_FILE_EXPLORER_PATH_MAX_LEN];
+
+        lv_snprintf(file_name, sizeof(file_name), "%s%s", cur_path+1, sel_fn);
+
+        printf(file_name);
+        printf("\n");
+
+        page_open(page_image(&file_name), NULL);
     }
 }
 

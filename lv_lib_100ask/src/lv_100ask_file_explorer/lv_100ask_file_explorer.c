@@ -351,7 +351,7 @@ static void lv_100ask_file_explorer_constructor(const lv_obj_class_t * class_p, 
 
     // 展示当前路径
     explorer->path_label = lv_label_create(explorer->head_area);
-    lv_label_set_text(explorer->path_label, LV_SYMBOL_EYE_OPEN"https://lvgl.100ask.net");
+    lv_label_set_text(explorer->path_label, "/"/*"https://lvgl.100ask.net"*/);
     lv_obj_center(explorer->path_label);
 
     // 目录内容展示列表
@@ -645,25 +645,22 @@ static void show_dir(lv_obj_t * obj, char * path)
             (is_end_with(fn , ".gif") == true) || (is_end_with(fn , ".GIF") == true)) {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_IMAGE "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "1");
-        }
-        else if ((is_end_with(fn , ".mp3") == true) || (is_end_with(fn , ".MP3") == true)) {
+        } else if((is_end_with(fn, ".mp3") == true) || (is_end_with(fn, ".MP3") == true) ||
+                  (is_end_with(fn, ".ogg") == true) || (is_end_with(fn, ".OGG") == true) ||
+                  (is_end_with(fn, ".wav") == true) || (is_end_with(fn, ".WAV") == true)) {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_AUDIO "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "2");
-        }
-        else if ((is_end_with(fn , ".mp4") == true) || (is_end_with(fn , ".MP4") == true)) {
+        } else if((is_end_with(fn, ".mp4") == true) || (is_end_with(fn, ".MP4") == true)) {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_VIDEO "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "3");
-        }
-        else if((is_end_with(fn , ".") == true) || (is_end_with(fn , "..") == true)) {
+        } else if((is_end_with(fn, ".") == true) || (is_end_with(fn, "..") == true)) {
             /*is dir*/
             //lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_DIRECTORY "  %s", fn);
             continue;
-        }
-        else if(fn[0] == '/') {/*is dir*/
+        } else if(fn[0] == '/') { /*is dir*/
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_DIRECTORY "  %s", fn+1);
             lv_table_set_cell_value(explorer->file_list, index, 1, "0");
-        }
-        else {
+        } else {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_FILE "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "4");
         }
@@ -681,7 +678,7 @@ static void show_dir(lv_obj_t * obj, char * path)
 
     lv_memset_00(explorer->cur_path, sizeof(explorer->cur_path));
     strcpy(explorer->cur_path, path);
-    lv_label_set_text_fmt(explorer->path_label, LV_SYMBOL_EYE_OPEN" %s", path);
+    lv_label_set_text_fmt(explorer->path_label, "%s", path);
 
     size_t cur_path_len = strlen(explorer->cur_path);
     if((*((explorer->cur_path) + cur_path_len) != '/') && (cur_path_len < LV_100ASK_FILE_EXPLORER_PATH_MAX_LEN)) {

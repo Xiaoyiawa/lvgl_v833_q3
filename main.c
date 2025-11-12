@@ -22,6 +22,7 @@
 #include "pages/page_file_manager.h"
 #include "pages/page_calculator.h"
 #include "pages/page_apple.h"
+#include "pages/page_image.h"
 
 #define DISP_BUF_SIZE (240 * 240)
 
@@ -51,10 +52,6 @@ uint32_t tick_get(void);
 
 int main(int argc, char *argv[])
 {
-	printf("kill robot\n");
-	system("killall robotd");
-	system("killall robot_run");
-	usleep(100000);
 	
 	printf("ciallo lvgl\n");
 	#if LV_USE_PERF_MONITOR
@@ -63,6 +60,11 @@ int main(int argc, char *argv[])
 
     bool isDaemonMode = true;
 
+    powerd = open("/dev/input/event1", O_RDWR);
+    fcntl(powerd, 4, 2048);
+    homed = open("/dev/input/event2", O_RDWR);
+    fcntl(homed, 4, 2048);
+
     for (uint32_t i = 0; i < argc; i++)
     {
         char * arg = argv[i];
@@ -70,7 +72,21 @@ int main(int argc, char *argv[])
         if(strcmp(arg, "-d") == 0) {
             isDaemonMode = false;
         }
+
+        if(strcmp(arg, "-w") == 0) {
+            daemon(1, 0);
+            switchBackground();
+            while(1) {
+                usleep(25000);
+                readKeyHome();
+            }
+        }
     }
+
+	printf("kill robot\n");
+	system("killall robotd");
+	system("killall robot_run");
+	usleep(100000);
 
     getcwd(homepath, PATH_MAX_LENGTH);
 
@@ -80,6 +96,7 @@ int main(int argc, char *argv[])
     
     fbd = open("/dev/fb0", O_RDWR);
     dispd = open("/dev/disp", O_RDWR);
+    lcdInit();
     lcdOpen();
     touchOpen();
     lcdBrightness(25);
@@ -106,11 +123,6 @@ int main(int argc, char *argv[])
     indev_drv.type = LV_INDEV_TYPE_POINTER;
     indev_drv.read_cb = evdev_read;
     lv_indev_t *indev = lv_indev_drv_register(&indev_drv);
-    
-    powerd = open("/dev/input/event1", O_RDWR);
-    fcntl(powerd, 4,2048);
-    homed = open("/dev/input/event2", O_RDWR);
-    fcntl(homed, 4,2048);
 
 	lv_ffmpeg_init();
 
@@ -134,9 +146,6 @@ int main(int argc, char *argv[])
             }
         }
         else {
-            if(tick_get() - backgroundTs >= 300000) {
-                switchForeground();
-            }
             usleep(25000);
         }
     }
@@ -165,6 +174,11 @@ uint32_t tick_get(void)
 
     uint32_t time_ms = now_ms - start_ms;
     return time_ms;
+}
+
+void lcdInit(void)
+{
+    //ioctl(devfb0, 0x4601u, 1);
 }
 
 void lcdOpen(void) {
@@ -240,7 +254,7 @@ void readKeyHome(void) {
                 homeClickTs = ts;
             }
         } else {
-            //printf("[key]home_down\n");
+            printf("[key]home_down\n");
         }
     }
 }

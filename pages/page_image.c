@@ -1,24 +1,17 @@
-#include "page_apple.h"
+#include "page_image.h"
 
 static void back_click(lv_event_t * e);
 
-lv_obj_t * page_apple()
+lv_obj_t * page_image(char * src)
 {
     lv_obj_t * screen = lv_obj_create(lv_scr_act());
     lv_obj_remove_style_all(screen);
     lv_obj_set_size(screen, lv_pct(100), lv_pct(100));
 
-    
-    lv_obj_t * player = lv_ffmpeg_player_create(screen);
-    lv_obj_set_size(player, lv_pct(100), lv_pct(75));
-    lv_ffmpeg_player_set_src(player, "./res/BadApple.mp4");
-    lv_ffmpeg_player_set_auto_restart(player, false);
-    //player->ffmpeg_ctx->skip_frame = AVDISCARD_NONKEY;
-    //lv_ffmpeg_player_set_volume(player, 100);
-    //lv_ffmpeg_player_set_mute(player, false);
-    //lv_ffmpeg_player_set_zoom_mode(player, LV_FFMPEG_PLAYER_ZOOM_MODE_FIT);
-    lv_ffmpeg_player_set_cmd(player, LV_FFMPEG_PLAYER_CMD_START);
-    lv_obj_center(player);
+    lv_obj_t * img = lv_img_create(screen);
+    lv_obj_set_size(img, lv_pct(100), lv_pct(100));
+    lv_obj_center(img);
+    lv_img_set_src(img, src);
 
     lv_obj_t * btn_back = lv_btn_create(screen);
     lv_obj_set_size(btn_back, lv_pct(25), lv_pct(12));
