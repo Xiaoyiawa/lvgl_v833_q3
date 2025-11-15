@@ -187,11 +187,6 @@ static void * play_thread_func(void * arg)
     }
 
     while(player->state != PLAYER_STOPPED) {
-        // 检查暂停状态
-        if(player->state == PLAYER_PAUSED) {
-            usleep(100000); // 100ms
-            continue;
-        }
 
         // 检查跳转请求
         if(player->seek_request) {
@@ -203,6 +198,12 @@ static void * play_thread_func(void * arg)
                 player->current_pts = seek_target;
             }
             player->seek_request = 0;
+        }
+        
+        // 检查暂停状态
+        if(player->state == PLAYER_PAUSED) {
+            usleep(100000); // 100ms
+            continue;
         }
 
         int ret = av_read_frame(player->format_ctx, packet);

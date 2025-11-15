@@ -1,12 +1,15 @@
 #include "page_audio.h"
 
-lv_obj_t * btn_control_label;
-audio_player_t * player;
+static lv_obj_t * btn_control_label;
+static lv_obj_t * slider_progress;
+static audio_player_t * player;
+static lv_timer_t * timer;
 
 static void back_click(lv_event_t * e);
 static void control_click(lv_event_t * e);
-static void backwards_click(lv_event_t * e);
-static void forward_click(lv_event_t * e);
+static void timer_tick(lv_event_t * e);
+static void slider_progress_changed(lv_event_t * e);
+static void slider_progress_released(lv_event_t * e);
 
 lv_obj_t * page_audio(char * filename)
 {
@@ -15,9 +18,13 @@ lv_obj_t * page_audio(char * filename)
     lv_obj_set_size(screen, lv_pct(100), lv_pct(100));
 
     system("echo 1 > /dev/spk_crtl");
+
+
     player = player_create(filename); // /mnt/app/factory/play_test.wav
     if(player_init(player) == 0) player_resume(player);
     else player = NULL;
+
+    timer  = lv_timer_create(timer_tick, 250, NULL);
 
     lv_obj_t * btn_control = lv_btn_create(screen);
     lv_obj_set_size(btn_control, lv_pct(25), lv_pct(25));
@@ -27,23 +34,12 @@ lv_obj_t * page_audio(char * filename)
     lv_obj_center(btn_control_label);
     lv_obj_add_event_cb(btn_control, control_click, LV_EVENT_CLICKED, player);
 
-    
-    lv_obj_t * btn_forward = lv_btn_create(screen);
-    lv_obj_set_size(btn_forward, lv_pct(25), lv_pct(25));
-    lv_obj_align(btn_forward, LV_ALIGN_RIGHT_MID, 0, 0);
-    lv_obj_t * btn_forward_label = lv_label_create(btn_forward);
-    lv_label_set_text(btn_forward_label, ">");
-    lv_obj_center(btn_forward_label);
-    lv_obj_add_event_cb(btn_forward, forward_click, LV_EVENT_CLICKED, player);
-
-    lv_obj_t * btn_backwards = lv_btn_create(screen);
-    lv_obj_set_size(btn_backwards, lv_pct(25), lv_pct(25));
-    lv_obj_align(btn_backwards, LV_ALIGN_LEFT_MID, 0, 0);
-    lv_obj_t * btn_backwards_label = lv_label_create(btn_backwards);
-    lv_label_set_text(btn_backwards_label, "<");
-    lv_obj_center(btn_backwards_label);
-    lv_obj_add_event_cb(btn_backwards, backwards_click, LV_EVENT_CLICKED, player);
-    
+    slider_progress = lv_slider_create(screen);
+    lv_obj_set_size(slider_progress, lv_pct(80), lv_pct(10));
+    lv_obj_align(slider_progress, LV_ALIGN_CENTER, 0, 0);
+    lv_slider_set_range(slider_progress, 0, 100);
+    lv_obj_add_event_cb(slider_progress, slider_progress_changed, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(slider_progress, slider_progress_released, LV_EVENT_RELEASED, NULL);
 
     lv_obj_t * btn_back = lv_btn_create(screen);
     lv_obj_set_size(btn_back, lv_pct(25), lv_pct(12));
@@ -58,6 +54,7 @@ lv_obj_t * page_audio(char * filename)
 
 static void back_click(lv_event_t * e)
 {
+    if(timer) lv_timer_del(timer);
     if(player) player_destroy(player);
     system("echo 0 > /dev/spk_crtl");
     page_back();
@@ -70,39 +67,33 @@ static void control_click(lv_event_t * e)
     if(state == PLAYER_PAUSED) {
         system("echo 1 > /dev/spk_crtl");
         player_resume(player);
-        lv_label_set_text(btn_control_label, "pause");
     }
     if(state == PLAYER_PLAYING) {
         player_pause(player);
         system("echo 0 > /dev/spk_crtl");
-        lv_label_set_text(btn_control_label, "resume");
     }
 }
 
-static void forward_click(lv_event_t * e)
+static void slider_progress_changed(lv_event_t * e) 
+{
+    //lv_obj_t * slider = lv_event_get_target(e);
+    //int value         = lv_slider_get_value(slider);
+}
+static void slider_progress_released(lv_event_t * e)
 {
     if(!player) return;
     player_state_t state = player_get_state(player);
-    if(state == PLAYER_PLAYING || state == PLAYER_PAUSED) {
-        /*
-        int64_t pos = player_get_position_ms(player);
-        player_seek_ms(player, pos + 10000);
-        */
-        double pos = player_get_position_pct(player);
-        player_seek_pct(player, pos + 5);
+    if(state == PLAYER_PLAYING || state == PLAYER_PAUSED){
+        lv_obj_t * slider = lv_event_get_target(e);
+        int value         = lv_slider_get_value(slider);
+        player_seek_pct(player, value);
     }
 }
 
-static void backwards_click(lv_event_t * e)
-{
+static void timer_tick(lv_event_t * e){
     if(!player) return;
     player_state_t state = player_get_state(player);
-    if(state == PLAYER_PLAYING || state == PLAYER_PAUSED) {
-        /*
-        int64_t pos = player_get_position_ms(player);
-        player_seek_ms(player, pos - 10000);
-        */
-        double pos = player_get_position_pct(player);
-        player_seek_pct(player, pos - 5);
-    }
+    if(state == PLAYER_PLAYING) lv_label_set_text(btn_control_label, "pause");
+    if(state == PLAYER_PAUSED) lv_label_set_text(btn_control_label, "resume");
+    lv_slider_set_value(slider_progress, player_get_position_pct(player), LV_ANIM_OFF);
 }
