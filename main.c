@@ -39,12 +39,14 @@ extern uint32_t sleepTs     = -1;
 extern uint32_t homeClickTs = -1;
 extern uint32_t backgroundTs = -1;
 
-extern bool deepsleep  = false;
+extern bool deepSleep  = false;
+extern bool dontDeepSleep  = false;
 
 extern void lcdBrightness(int brightness);
 extern void sysSleep(void);
 extern void sysWake(void);
 extern void sysDeepSleep(void);
+extern void setDontDeepSleep(bool b);
 extern void switchRobot(void);
 extern void switchBackground(void);
 extern void switchForeground(void);
@@ -86,8 +88,9 @@ int main(int argc, char *argv[])
 
 	printf("kill robot\n");
 	system("killall robotd");
-	system("killall robot_run");
-	usleep(100000);
+    system("killall robot_run");
+    system("killall robot_run_1");
+    usleep(100000);
 
     getcwd(homepath, PATH_MAX_LENGTH);
 
@@ -143,10 +146,13 @@ int main(int argc, char *argv[])
 	            usleep(5000);
             }
             else {
-        	    if (!deepsleep && tick_get() - sleepTs >= 60000) {
-        		    sysDeepSleep();
-        	    }
-            	usleep(25000);
+                if(dontDeepSleep) 
+                    sleepTs = tick_get();
+
+                else if(!deepSleep && tick_get() - sleepTs >= 60000) 
+                    sysDeepSleep();
+                
+                usleep(25000);
             }
         }
         else {
@@ -230,7 +236,7 @@ void readKeyPower(void) {
 
 		if(buffer[12] == 0x00) {
 			//printf("[key]power_up\n");
-			if(sleepTs == -1) {
+			if(sleepTs == -1 && !deepSleep) {
 				sysSleep();
 			}
 			else {
@@ -264,32 +270,39 @@ void readKeyHome(void) {
 }
 
 void sysWake(void){
-	deepsleep = false;
+	deepSleep = false;
 	sleepTs = -1;
 	touchOpen();
     lcdOpen();
 }
 
 void sysSleep(void){
-	deepsleep = false;
+	deepSleep = false;
 	sleepTs = tick_get();
 	touchClose();
 	lcdClose();
 }
 
 void sysDeepSleep(void){
-	deepsleep = true;
+	deepSleep = true;
     sleepTs   = -1;
-    // 这是真睡死过去，相当省电，按电源键还能回来
+    // 睡死过去，相当省电
     system("echo \"0\" >/sys/class/rtc/rtc0/wakealarm");
     system("echo \"mem\" > /sys/power/state");
+
+    // 按电源键会醒过来，继续执行下面的代码
 }
 
-void switchRobot(){
+void setDontDeepSleep(bool b){
+    dontDeepSleep = b;
+}
+
+void switchRobot(void){
     switchBackground();
 
-    chdir("/mnt/app");
-    system("./robot_run &");
+    chdir(homepath);
+    system("chmod 777 ./switch_robot");
+    system("sh ./switch_robot");
 }
 
 void switchBackground(void){
@@ -303,6 +316,9 @@ void switchForeground(void)
     if(backgroundTs == -1) return;
 
     chdir(homepath);
+    system("chmod 777 switch_foreground");
     system("sh ./switch_foreground &");
+    //等待自己被脚本杀死，然后开始新的轮回
+    //因为这里确实处理不好设备占用问题，只能把两个全杀了再重启自己
     sleep(114514);
 }

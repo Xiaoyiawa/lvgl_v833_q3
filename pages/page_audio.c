@@ -20,6 +20,7 @@ lv_obj_t * page_audio(char * filename)
     lv_obj_remove_style_all(screen);
     lv_obj_set_size(screen, lv_pct(100), lv_pct(100));
 
+    setDontDeepSleep(true);
     system("echo 1 > /dev/spk_crtl");
 
 
@@ -70,6 +71,7 @@ static void back_click(lv_event_t * e)
     if(timer) lv_timer_del(timer);
     if(player) player_destroy(player);
     system("echo 0 > /dev/spk_crtl");
+    setDontDeepSleep(false);
     page_back();
 }
 
