@@ -94,7 +94,10 @@ int main(int argc, char *argv[])
     if(isDaemonMode) daemon(1,0);
 	//daemon函数将本程序置于后台，脱离终端
 	//若要进行调试，请使用-d参数
-    
+
+    setenv("TZ", "CST-8", 1);
+    tzset();
+
     fbd = open("/dev/fb0", O_RDWR);
     dispd = open("/dev/disp", O_RDWR);
     lcdInit();
@@ -136,7 +139,7 @@ int main(int argc, char *argv[])
             readKeyPower();
          	if(sleepTs == -1) {
             	lv_timer_handler();
-        	    lcdRefresh();
+        	    //lcdRefresh();    //放在fbdev里了
 	            usleep(5000);
             }
             else {

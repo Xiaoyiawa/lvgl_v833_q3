@@ -242,6 +242,9 @@ void fbdev_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color
         /*Not supported bit per pixel*/
     }
 
+    int buffer[8] = {0};
+    ioctl(fbfd, 0x4606u, buffer);
+
     lv_disp_flush_ready(drv);
 }
 

@@ -33,7 +33,7 @@ lv_obj_t * page_audio(char * filename)
 
     lv_obj_t * btn_control = lv_btn_create(screen);
     lv_obj_set_size(btn_control, lv_pct(40), lv_pct(20));
-    lv_obj_align(btn_control, LV_ALIGN_TOP_MID, 0, lv_pct(70));
+    lv_obj_align(btn_control, LV_ALIGN_TOP_MID, 0, lv_pct(65));
     btn_control_label = lv_label_create(btn_control);
     lv_label_set_text(btn_control_label, "pause");
     lv_obj_center(btn_control_label);

@@ -12,6 +12,7 @@ lv_obj_t * page_image(char * src)
     lv_obj_set_size(img, lv_pct(100), lv_pct(100));
     lv_obj_center(img);
     lv_img_set_src(img, src);
+    //lv_img_set_zoom(img, 128);
 
     lv_obj_t * btn_back = lv_btn_create(screen);
     lv_obj_set_size(btn_back, lv_pct(25), lv_pct(12));
