@@ -1,17 +1,17 @@
-#include "audio_player.h"
+#include "ff_player.h"
 
 #define BUFFER_SIZE 4096
 #define MAX_CHANNELS 6
 
 static void * play_thread_func(void * arg);
+static bool ffmpeg_pix_fmt_has_alpha(enum AVPixelFormat pix_fmt);
 
-audio_player_t * player_create(const char * filename)
+ff_player_t * player_create()
 {
-    audio_player_t * player = malloc(sizeof(audio_player_t));
+    ff_player_t * player = malloc(sizeof(ff_player_t));
     if(!player) return NULL;
 
-    memset(player, 0, sizeof(audio_player_t));
-    player->filename = strdup(filename);
+    memset(player, 0, sizeof(ff_player_t));
 
     // 初始化互斥锁
     pthread_mutex_init(&player->mutex, NULL);
@@ -24,7 +24,7 @@ audio_player_t * player_create(const char * filename)
     return player;
 }
 
-int player_init(audio_player_t * player)
+int player_open(ff_player_t * player, const char * filename)
 {
     if(!player) return -1;
 
@@ -33,8 +33,10 @@ int player_init(audio_player_t * player)
     // 如果已经在播放，直接返回
     if(player->state == PLAYER_PLAYING) {
         pthread_mutex_unlock(&player->mutex);
-        return 0;
+        return -2;
     }
+
+    player->filename = strdup(filename);
 
     int ret = 0;
 
@@ -50,6 +52,22 @@ int player_init(audio_player_t * player)
         ret = -1;
         goto cleanup;
     }
+
+    pthread_mutex_unlock(&player->mutex);
+    return 0;
+
+cleanup:
+    player_stop(player);
+    pthread_mutex_unlock(&player->mutex);
+    return ret;
+}
+
+int player_init_audio(ff_player_t * player)
+{
+    if(!player) return -1;
+    pthread_mutex_lock(&player->mutex);
+
+    int ret = 0;
 
     // 查找音频流
     player->audio_stream_index = -1;
@@ -171,9 +189,92 @@ cleanup:
     return ret;
 }
 
+int player_init_video(ff_player_t * player, lv_img_t * img)
+{
+    if(!player || !img) return -1;
+
+    int ret            = 0;
+    player->video_area = img;
+    pthread_mutex_lock(&player->mutex);
+
+    // 查找视频流
+    player->video_stream_index = -1;
+    for(int i = 0; i < player->format_ctx->nb_streams; i++) {
+        if(player->format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            player->video_stream_index = i;
+            break;
+        }
+    }
+
+    if(player->video_stream_index == -1) {
+        fprintf(stderr, "未找到视频流\n");
+        ret = -1;
+        goto cleanup;
+    }
+
+    // 获取解码器
+    AVCodecParameters * codecpar = player->format_ctx->streams[player->video_stream_index]->codecpar;
+    const AVCodec * codec        = avcodec_find_decoder(codecpar->codec_id);
+    if(!codec) {
+        fprintf(stderr, "未找到对应的解码器\n");
+        ret = -1;
+        goto cleanup;
+    }
+
+    player->video_codec_ctx = avcodec_alloc_context3(codec);
+    if(!player->video_codec_ctx) {
+        fprintf(stderr, "无法分配解码器上下文\n");
+        ret = -1;
+        goto cleanup;
+    }
+
+    if(avcodec_parameters_to_context(player->video_codec_ctx, codecpar) < 0) {
+        fprintf(stderr, "无法复制编解码器参数到解码器上下文\n");
+        ret = -1;
+        goto cleanup;
+    }
+
+    if(avcodec_open2(player->video_codec_ctx, codec, NULL) < 0) {
+        fprintf(stderr, "无法打开解码器\n");
+        ret = -1;
+        goto cleanup;
+    }
+
+    bool has_alpha = ffmpeg_pix_fmt_has_alpha(player->video_codec_ctx->pix_fmt);
+
+    // allocate image where the decoded image will be put 
+    player->width           = player->video_codec_ctx->width;
+    player->height           = player->video_codec_ctx->height;
+    player->color          = (has_alpha ? LV_IMG_CF_TRUE_COLOR_ALPHA : LV_IMG_CF_TRUE_COLOR);
+
+    ret = 0;
+
+    pthread_mutex_unlock(&player->mutex);
+    return ret;
+
+cleanup:
+    avcodec_free_context(&player->video_codec_ctx);
+    return ret;
+}
+
+static bool ffmpeg_pix_fmt_has_alpha(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor * desc = av_pix_fmt_desc_get(pix_fmt);
+
+    if(desc == NULL) {
+        return false;
+    }
+
+    if(pix_fmt == AV_PIX_FMT_PAL8) {
+        return true;
+    }
+
+    return (desc->flags & AV_PIX_FMT_FLAG_ALPHA) ? true : false;
+}
+
 static void * play_thread_func(void * arg)
 {
-    audio_player_t * player = (audio_player_t *)arg;
+    ff_player_t * player = (ff_player_t *)arg;
 
     AVPacket * packet = av_packet_alloc();
     AVFrame * frame   = av_frame_alloc();
@@ -267,7 +368,7 @@ cleanup:
     return NULL;
 }
 
-int player_pause(audio_player_t * player)
+int player_pause(ff_player_t * player)
 {
     if(!player) return -1;
 
@@ -279,7 +380,7 @@ int player_pause(audio_player_t * player)
     return -1;
 }
 
-int player_resume(audio_player_t * player)
+int player_resume(ff_player_t * player)
 {
     if(!player) return -1;
 
@@ -291,7 +392,7 @@ int player_resume(audio_player_t * player)
     return -1;
 }
 
-int player_stop(audio_player_t * player)
+int player_stop(ff_player_t * player)
 {
     if(!player) return -1;
 
@@ -306,7 +407,11 @@ int player_stop(audio_player_t * player)
     }
 
     // 清理资源
-    player_close_volume_control(player);
+    if(player->mixer) {
+        snd_mixer_close(player->mixer);
+        player->mixer = NULL;
+        player->elem  = NULL;
+    }
 
     if(player->pcm_handle) {
         snd_pcm_drain(player->pcm_handle);
@@ -334,7 +439,7 @@ int player_stop(audio_player_t * player)
 }
 
 //根据百分比跳转
-int player_seek_pct(audio_player_t * player, double percent)
+int player_seek_pct(ff_player_t * player, double percent)
 {
     int64_t target_pts = (int64_t)(player->duration * percent / 100.0);
     int64_t now_pts    = player->current_pts;
@@ -352,7 +457,7 @@ int player_seek_pct(audio_player_t * player, double percent)
 }
 
 //根据毫秒数跳转
-int player_seek_ms(audio_player_t * player, int64_t target_ms)
+int player_seek_ms(ff_player_t * player, int64_t target_ms)
 {
     if(player->state != PLAYER_STOPPED) {
         int64_t target_pts = target_ms * (AV_TIME_BASE / 1000);
@@ -368,7 +473,7 @@ int player_seek_ms(audio_player_t * player, int64_t target_ms)
     return -1;
 }
 
-int64_t player_get_position_ms(audio_player_t * player)
+int64_t player_get_position_ms(ff_player_t * player)
 {
     if(!player || player->duration <= 0) return 0;
 
@@ -376,26 +481,26 @@ int64_t player_get_position_ms(audio_player_t * player)
     return current / (AV_TIME_BASE / 1000);
 }
 
-int64_t player_get_duration_ms(audio_player_t * player)
+int64_t player_get_duration_ms(ff_player_t * player)
 {
     if(!player || player->duration <= 0) return 0;
     return player->duration / (AV_TIME_BASE / 1000);
 }
 
-double player_get_position_pct(audio_player_t * player)
+double player_get_position_pct(ff_player_t * player)
 {
     if(!player || player->duration <= 0) return 0.0;
     int64_t current = player->current_pts;
     return (double)current / player->duration * 100.0;
 }
 
-player_state_t player_get_state(audio_player_t * player)
+player_state_t player_get_state(ff_player_t * player)
 {
     if(!player) return PLAYER_STOPPED;
     return player->state;
 }
 
-void player_destroy(audio_player_t * player)
+void player_destroy(ff_player_t * player)
 {
     if(!player) return;
 
@@ -410,7 +515,7 @@ void player_destroy(audio_player_t * player)
     free(player);
 }
 
-int player_init_volume_control(audio_player_t * player)
+int player_init_volume_control(ff_player_t * player)
 {
     int ret;
     const char * card       = "default";
@@ -449,14 +554,14 @@ int player_init_volume_control(audio_player_t * player)
 
 
     // 获取音量范围
-    snd_mixer_selem_get_playback_volume_range(player->elem, &player->min_volume, &player->max_volume);
+    snd_mixer_selem_get_playback_volume_range(player->elem, &player->volume_min, &player->volume_max);
 
     // 获取实际音量并计算百分比
     long actual_volume;
     snd_mixer_selem_get_playback_volume(player->elem, 0, &actual_volume);
-    player->volume     = 100 * (actual_volume - player->min_volume) / (player->max_volume - player->min_volume);
+    player->volume     = 100 * (actual_volume - player->volume_min) / (player->volume_max - player->volume_min);
 
-    printf("音量: %ld (%ld, %ld-%ld)\n", player->volume, actual_volume, player->min_volume, player->max_volume);
+    printf("音量: %ld (%ld, %ld-%ld)\n", player->volume, actual_volume, player->volume_min, player->volume_max);
     return 0;
 
 cleanup:
@@ -465,7 +570,7 @@ cleanup:
     return -1;
 }
 
-int player_set_volume(audio_player_t * player, int volume)
+int player_set_volume(ff_player_t * player, int volume)
 {
     if(!player || !player->elem) return -1;
 
@@ -475,7 +580,7 @@ int player_set_volume(audio_player_t * player, int volume)
     player->volume = volume;
 
     // 将百分比转换为实际音量值
-    long actual_volume = player->min_volume + (volume * (player->max_volume - player->min_volume)) / 100;
+    long actual_volume = player->volume_min + (volume * (player->volume_max - player->volume_min)) / 100;
 
     int ret = snd_mixer_selem_set_playback_volume_all(player->elem, actual_volume);
     if(ret < 0) {
@@ -486,17 +591,8 @@ int player_set_volume(audio_player_t * player, int volume)
     return 0;
 }
 
-int player_get_volume(audio_player_t * player)
+int player_get_volume(ff_player_t * player)
 {
     if(!player) return -1;
     return player->volume;
-}
-
-void player_close_volume_control(audio_player_t * player)
-{
-    if(player && player->mixer) {
-        snd_mixer_close(player->mixer);
-        player->mixer = NULL;
-        player->elem  = NULL;
-    }
 }

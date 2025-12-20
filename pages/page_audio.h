@@ -11,7 +11,7 @@ extern "C" {
 #include "../lvgl/lvgl.h"
 #include "../lv_lib_100ask/lv_lib_100ask.h"
 #include "page_manager.h"
-#include "platform/audio_player.h"
+#include "platform/ff_player.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -27,7 +27,7 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-lv_obj_t * page_audio();
+lv_obj_t * page_audio(char * filename);
 
 /**********************
  *      MACROS

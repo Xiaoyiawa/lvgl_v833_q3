@@ -235,7 +235,7 @@ void readKeyPower(void) {
 		if(buffer[10] != 0x74) return;
 
 		if(buffer[12] == 0x00) {
-			//printf("[key]power_up\n");
+			printf("[key]power_up\n");
 			if(sleepTs == -1 && !deepSleep) {
 				sysSleep();
 			}
@@ -244,7 +244,7 @@ void readKeyPower(void) {
 			}
 		}
 		else {
-			//printf("[key]power_down\n");
+			printf("[key]power_down\n");
 		}
 	}
 }
@@ -255,7 +255,7 @@ void readKeyHome(void) {
 		if(buffer[10] != 0x73) return;
 
 		if(buffer[12] == 0x00) {
-			//printf("[key]home_up\n");
+			printf("[key]home_up\n");
             uint32_t ts = tick_get();
             if(homeClickTs != -1 && ts - homeClickTs <= 300){
                 switchForeground();

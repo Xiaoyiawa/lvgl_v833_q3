@@ -3,7 +3,7 @@
 static lv_obj_t * btn_control_label;
 static lv_obj_t * slider_progress;
 static lv_obj_t * slider_volume;
-static audio_player_t * player;
+static ff_player_t * player;
 static lv_timer_t * timer;
 
 static void back_click(lv_event_t * e);
@@ -24,11 +24,11 @@ lv_obj_t * page_audio(char * filename)
     system("echo 1 > /dev/spk_crtl");
 
 
-    player = player_create(filename); // /mnt/app/factory/play_test.wav
-    if(player_init(player) == 0) {
+    player = player_create(); // /mnt/app/factory/play_test.wav
+    if(player_open(player, filename) == 0 && player_init_audio(player) == 0) {
         player_resume(player);
-    }
-    else player = NULL;
+    } else
+        player = NULL;
 
     timer  = lv_timer_create(timer_tick, 250, NULL);
 
