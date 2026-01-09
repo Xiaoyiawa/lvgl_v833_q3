@@ -34,8 +34,8 @@ static lv_100ask_calc_token_t lv_100ask_calc_get_next_token(lv_obj_t *obj);
 static lv_100ask_calc_token_t lv_100ask_calc_siglechar(char *curr_char);
 static double lv_100ask_calc_expr(lv_obj_t *obj);
 static double lv_100ask_calc_term(lv_obj_t *obj);
-static int lv_100ask_calc_factor(lv_obj_t *obj);
-static int lv_100ask_calc_tokenizer_num(char *curr_char);
+static double lv_100ask_calc_factor(lv_obj_t *obj);
+static double lv_100ask_calc_tokenizer_num(char *curr_char);
 static void lv_100ask_calc_accept(lv_obj_t *obj, lv_100ask_calc_token_t token);
 static void lv_100ask_calc_error(lv_100ask_calc_error_t error_code ,lv_100ask_calc_error_t err);
 static void lv_100ask_calc_tokenizer_next(lv_obj_t *obj);
@@ -303,13 +303,21 @@ static lv_100ask_calc_token_t lv_100ask_calc_get_next_token(lv_obj_t *obj)
 
     if (isdigit(*calc->curr_char))
     {
+        int dot_count = 0;
         // The length of the allowed number cannot be exceeded
         for (i = 0; i <= LV_100ASK_CALC_MAX_NUM_LEN; i++)
         {
-            if (!isdigit(*(calc->curr_char + i)))
-            {
+            if((*(calc->curr_char + i)) == '.') {
+                dot_count++;
+            }
+                
+            if(!isdigit(*(calc->curr_char + i)) && (*(calc->curr_char + i)) != '.') {
                 calc->next_char = calc->curr_char + i;
-                return TOKENIZER_NUMBER;
+
+                if(dot_count <= 1) 
+                    return TOKENIZER_NUMBER;
+                else
+                    return TOKENIZER_ERROR;
             }
         }
     }
@@ -445,9 +453,9 @@ static double lv_100ask_calc_term(lv_obj_t *obj)
  * @param curr_char       pointer to a calc object
  * @return                Value of factor
  */
-static int lv_100ask_calc_factor(lv_obj_t *obj)
+static double lv_100ask_calc_factor(lv_obj_t *obj)
 {
-    int r = 0;
+    double r = 0;
     lv_100ask_calc_t * calc = (lv_100ask_calc_t *)obj;
 
     // Type of current token
@@ -484,9 +492,9 @@ static int lv_100ask_calc_factor(lv_obj_t *obj)
  * @param curr_char       Pointer to character
  * @return                Result of conversion to integer
  */
-static int lv_100ask_calc_tokenizer_num(char *curr_char)
+static double lv_100ask_calc_tokenizer_num(char *curr_char)
 {
-    return atoi(curr_char);
+    return atof(curr_char);
 }
 
 
