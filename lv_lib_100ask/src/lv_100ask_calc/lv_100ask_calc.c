@@ -173,6 +173,8 @@ static void lv_100ask_calc_constructor(const lv_obj_class_t * class_p, lv_obj_t 
     calc->btnm = lv_btnmatrix_create(obj);
     lv_obj_set_style_radius(calc->btnm, 0, 0);
     lv_obj_set_style_border_width(calc->btnm, 0, 0);
+    lv_obj_set_style_pad_all(calc->btnm, 4, 0);
+    lv_obj_set_style_pad_gap(calc->btnm, 4, 0);
 
     lv_obj_set_size(calc->btnm, LV_PCT(100), LV_PCT(75));
     lv_btnmatrix_set_map(calc->btnm, btnm_map);
@@ -231,7 +233,8 @@ static void calc_btnm_changed_event_cb(lv_event_t *e)
             }
             else
             {
-                sprintf(tmp_buff, "%s=%.8g\n", lv_textarea_get_text(calc->ta_input), calc_results);
+                sprintf(tmp_buff, "%s=%.8g\0", lv_textarea_get_text(calc->ta_input), calc_results);
+                lv_textarea_add_text(calc->ta_hist, "\n");
                 lv_textarea_add_text(calc->ta_hist, tmp_buff);
                 lv_textarea_set_text(calc->ta_input, tmp_buff);
                 // Empty expression
@@ -254,12 +257,14 @@ static void calc_btnm_changed_event_cb(lv_event_t *e)
         {
             lv_textarea_del_char(calc->ta_input);
             calc->calc_exp[calc->count-1] = '\0';
-            calc->count--;
+
+            if(calc->count > 0) calc->count--;
+            else lv_textarea_set_text(calc->ta_input, "");
         }
         // Add char
         else
         {
-            if(calc->count == 0) lv_textarea_set_text(calc->ta_input, "");
+            if(calc->count <= 0) lv_textarea_set_text(calc->ta_input, "");
 
             lv_textarea_add_text(calc->ta_input, txt);
             strcat(&calc->calc_exp[0], txt);
