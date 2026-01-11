@@ -51,7 +51,7 @@ lv_obj_t * page_main() {
     lv_obj_center(btn_label_calculator);
     lv_obj_add_event_cb(btn_calculator, btn_calculator_click, LV_EVENT_CLICKED, NULL);
 
-    /*
+    
     lv_obj_t * btn_bird = lv_btn_create(screen);
     lv_obj_set_size(btn_bird, lv_pct(45), lv_pct(25));
     lv_obj_align(btn_bird, LV_FLEX_ALIGN_CENTER, 0, 0);
@@ -59,7 +59,7 @@ lv_obj_t * page_main() {
     lv_label_set_text(btn_label_bird, "flappy bird");
     lv_obj_center(btn_label_bird);
     lv_obj_add_event_cb(btn_bird, btn_bird_click, LV_EVENT_CLICKED, NULL);
-    */
+    
 
     lv_obj_t * btn_demo = lv_btn_create(screen);
     lv_obj_set_size(btn_demo, lv_pct(45), lv_pct(25));

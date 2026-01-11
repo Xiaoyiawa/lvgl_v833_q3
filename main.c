@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
             readKeyPower();
          	if(sleepTs == -1) {
             	lv_timer_handler();
-        	    //lcdRefresh();    //放在fbdev里了
+        	    lcdRefresh();    //放在fbdev里不合适，反而会增大cpu占用且变卡，神金啊
 	            usleep(5000);
             }
             else {
