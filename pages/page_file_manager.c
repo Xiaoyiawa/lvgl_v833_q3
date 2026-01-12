@@ -40,12 +40,12 @@ static void explorer_event_handler(lv_event_t * e)
         printf(file_name);
         printf("\n");
 
-        if(str_end(file_name, ".png") || str_end(file_name, ".jpg") || str_end(file_name, ".jpeg") ||
-           str_end(file_name, ".bmp"))
+        if(str_end_with(file_name, ".png", false) || str_end_with(file_name, ".jpg", false) || str_end_with(file_name, ".jpeg", false) ||
+           str_end_with(file_name, ".bmp", false))
             page_open(page_image(&file_name), NULL);
 
-        if(str_end(file_name, ".mp3") || str_end(file_name, ".wav") || str_end(file_name, ".ogg") ||
-           str_end(file_name, ".m4a"))
+        if(str_end_with(file_name, ".mp3", false) || str_end_with(file_name, ".wav", false) || str_end_with(file_name, ".ogg", false) ||
+           str_end_with(file_name, ".m4a", false))
             page_open(page_audio(&file_name), NULL);
     }
 }

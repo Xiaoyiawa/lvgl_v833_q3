@@ -35,7 +35,7 @@ static int score;
 #define TUBE_AX_INIT SCREEN_WIDTH
 #define TUBE_BX_INIT SCREEN_WIDTH * 1.5 + TUBE_WIDTH * 0.5
 #define RAND_MIN (SCREEN_HEIGHT - GAP_HEIGHT) * 0.25
-#define RAND_MAX (SCREEN_HEIGHT - GAP_HEIGHT) * 0.25
+#define RAND_MAX (SCREEN_HEIGHT - GAP_HEIGHT) * 0.75
 
 static void game_init();
 static void game_score();
@@ -73,7 +73,7 @@ lv_obj_t * page_bird()
 
     img_tap = lv_img_create(screen);
     lv_obj_set_size(img_tap, 120, 98);
-    lv_obj_align(img_tap, LV_ALIGN_TOP_MID, 0, lv_pct(40));
+    lv_obj_align(img_tap, LV_ALIGN_TOP_MID, 0, lv_pct(42));
     lv_img_set_src(img_tap, "/mnt/UDISK/lvgl/res/bird/tap.png");
 
     img_over = lv_img_create(screen);
@@ -84,7 +84,7 @@ lv_obj_t * page_bird()
 
     img_logo = lv_img_create(screen);
     lv_obj_set_size(img_logo, 178, 48);
-    lv_obj_align(img_logo, LV_ALIGN_TOP_MID, 0, lv_pct(15));
+    lv_obj_align(img_logo, LV_ALIGN_TOP_MID, 0, lv_pct(16));
     lv_img_set_src(img_logo, "/mnt/UDISK/lvgl/res/bird/logo.png");
 
     label_score = lv_label_create(screen);

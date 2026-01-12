@@ -25,8 +25,12 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-bool str_begin(const char * str1, const char * str2);
-bool str_end(const char * str1, const char * str2);
+bool str_begin_with(const char * str, const char * begin, bool case_sensitivity);
+bool str_end_with(const char * str, const char * begin, bool case_sensitivity);
+char to_upper_case(char c);
+bool is_lower_letter(char c);
+bool is_upper_letter(char c);
+
 
 /**********************
  *      MACROS

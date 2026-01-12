@@ -41,8 +41,12 @@ static void show_dir(lv_obj_t * obj, char * path);
 static void strip_ext(char * dir);
 static void sort_table_items(lv_obj_t * tb, int16_t lo, int16_t hi);
 static void exch_table_item(lv_obj_t * tb, int16_t i, int16_t j);
-static bool is_begin_with(const char * str1, const char * str2);
-static bool is_end_with(const char * str1, const char * str2);
+static bool is_begin_with(const char * str1, const char * str2, bool case_sensitivity);
+static bool is_end_with(const char * str1, const char * str2, bool case_sensitivity);
+
+static char to_upper_case(char c);
+static bool is_lower_letter(char c);
+static bool is_upper_letter(char c);
 
 /**********************
  *  STATIC VARIABLES
@@ -639,21 +643,22 @@ static void show_dir(lv_obj_t * obj, char * path)
         }
 
         // 识别并展示文件
-        if ((is_end_with(fn, ".png") == true)  || (is_end_with(fn, ".PNG") == true)  ||\
-            (is_end_with(fn , ".jpg") == true) || (is_end_with(fn , ".JPG") == true) ||\
-            (is_end_with(fn , ".bmp") == true) || (is_end_with(fn , ".BMP") == true) ||\
-            (is_end_with(fn , ".gif") == true) || (is_end_with(fn , ".GIF") == true)) {
+        if (is_end_with(fn, ".png", false)  ||\
+            is_end_with(fn , ".jpg", false) ||\
+            is_end_with(fn , ".bmp", false) ||\
+            is_end_with(fn , ".gif", false)) {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_IMAGE "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "1");
-        } else if((is_end_with(fn, ".mp3") == true) || (is_end_with(fn, ".MP3") == true) ||
-                  (is_end_with(fn, ".ogg") == true) || (is_end_with(fn, ".OGG") == true) ||
-                  (is_end_with(fn, ".wav") == true) || (is_end_with(fn, ".WAV") == true)) {
+        } else if(is_end_with(fn, ".mp3", false) ||
+                  is_end_with(fn, ".ogg", false) ||
+                  is_end_with(fn, ".m4a", false) ||
+                  is_end_with(fn, ".wav", false)) {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_AUDIO "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "2");
-        } else if((is_end_with(fn, ".mp4") == true) || (is_end_with(fn, ".MP4") == true)) {
+        } else if(is_end_with(fn, ".mp4", false)) {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_VIDEO "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "3");
-        } else if((is_end_with(fn, ".") == true) || (is_end_with(fn, "..") == true)) {
+        } else if(is_end_with(fn, ".", false) || is_end_with(fn, "..", false)) {
             /*is dir*/
             //lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_DIRECTORY "  %s", fn);
             continue;
@@ -746,8 +751,7 @@ static void sort_table_items(lv_obj_t * tb, int16_t lo, int16_t hi )
     sort_table_items(tb, gt+1, hi);
 }
 
-
-static bool is_begin_with(const char * str1, const char * str2)
+static bool is_begin_with(const char * str1, const char * str2, bool case_sensitivity)
 {
     if(str1 == NULL || str2 == NULL)
         return false;
@@ -761,8 +765,12 @@ static bool is_begin_with(const char * str1, const char * str2)
     char * p = str2;
     while(*p != '\0')
     {
-        if(*p != str1[i])
-            return false;
+        if(case_sensitivity) {
+            if(*p != str1[i]) return false;
+        }
+        else {
+            if(to_upper_case(*p) != to_upper_case(str1[i])) return false;
+        }
 
         p++;
         i++;
@@ -773,7 +781,7 @@ static bool is_begin_with(const char * str1, const char * str2)
 
 
 
-static bool is_end_with(const char * str1, const char * str2)
+static bool is_end_with(const char * str1, const char * str2, bool case_sensitivity)
 {
     if(str1 == NULL || str2 == NULL)
         return false;
@@ -785,8 +793,13 @@ static bool is_end_with(const char * str1, const char * str2)
     
     while(len2 >= 1)
     {
-        if(str2[len2 - 1] != str1[len1 - 1])
-            return false;
+        if(case_sensitivity){
+            if(str2[len2 - 1] != str1[len1 - 1]) return false;
+        }
+        else {
+            if(to_upper_case(str2[len2 - 1]) != to_upper_case(str1[len1 - 1])) return false;
+        }
+
 
         len2--;
         len1--;
@@ -795,5 +808,21 @@ static bool is_end_with(const char * str1, const char * str2)
     return true;
 }
 
+static char to_upper_case(char c)
+{
+    if(is_upper_letter(c)) return c;
+    if(is_lower_letter(c)) return c + 32;
+    return c;
+}
+
+static bool is_lower_letter(char c)
+{
+    return 65 <= c && c <= 90;
+}
+
+static bool is_upper_letter(char c)
+{
+    return 97 <= c && c <= 122;
+}
 
 #endif  /*LV_USE_100ASK_FILE_EXPLORER*/
