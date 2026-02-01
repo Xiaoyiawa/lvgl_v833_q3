@@ -153,14 +153,13 @@ int main(int argc, char *argv[])
     lv_freetype_init(128, 4, 0);
 
     lv_ft_info_t ft_info;
-    ft_info.name   = "/mnt/UDISK/lvgl/res/font.otf";
+    ft_info.name   = "/mnt/UDISK/lvgl/res/font.ttf";
     ft_info.weight = 16;
     ft_info.style  = FT_FONT_STYLE_NORMAL;
     ft_info.mem    = NULL;
 
     if(lv_ft_font_init(&ft_info)) {
-        lv_theme_t * theme =
-        lv_theme_default_init(disp, lv_palette_main(LV_PALETTE_LIGHT_GREEN), lv_palette_main(LV_PALETTE_GREEN), true, ft_info.font);
+        lv_theme_t * theme = lv_theme_default_init(disp, lv_palette_main(LV_PALETTE_LIGHT_GREEN), lv_palette_main(LV_PALETTE_GREEN), true, ft_info.font);
         theme->font_normal = ft_info.font;
         theme->font_large = ft_info.font;
         theme->font_small = ft_info.font;  //为啥子设置不上？
