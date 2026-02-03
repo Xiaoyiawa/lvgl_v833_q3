@@ -38,7 +38,7 @@ lv_obj_t * page_audio(char * filename)
 
     lv_obj_t * btn_control = lv_btn_create(screen);
     lv_obj_set_size(btn_control, lv_pct(40), lv_pct(20));
-    lv_obj_align(btn_control, LV_ALIGN_TOP_MID, 0, lv_pct(65));
+    lv_obj_align(btn_control, LV_ALIGN_TOP_MID, 0, lv_pct(60));
     btn_control_label = lv_label_create(btn_control);
     lv_label_set_text(btn_control_label, LV_SYMBOL_PAUSE "");
     lv_obj_center(btn_control_label);
@@ -63,7 +63,7 @@ lv_obj_t * page_audio(char * filename)
     lv_obj_set_size(btn_back, lv_pct(25), lv_pct(12));
     lv_obj_align(btn_back, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     lv_obj_t * btn_back_label = lv_label_create(btn_back);
-    lv_label_set_text(btn_back_label, SYMBOL_BACK "");
+    lv_label_set_text(btn_back_label, CUSTOM_SYMBOL_BACK "");
     lv_obj_center(btn_back_label);
     lv_obj_add_event_cb(btn_back, back_click, LV_EVENT_CLICKED, player);
 
@@ -71,7 +71,7 @@ lv_obj_t * page_audio(char * filename)
     lv_obj_set_size(btn_cycle, lv_pct(25), lv_pct(12));
     lv_obj_align(btn_cycle, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
     lv_obj_t * btn_cycle_label = lv_label_create(btn_cycle);
-    lv_label_set_text(btn_cycle_label, SYMBOL_BAN "");
+    lv_label_set_text(btn_cycle_label, CUSTOM_SYMBOL_BAN "");
     lv_obj_center(btn_cycle_label);
     lv_obj_add_event_cb(btn_cycle, cycle_click, LV_EVENT_CLICKED, btn_cycle_label);
 
@@ -98,8 +98,8 @@ static void cycle_click(lv_event_t * e)
     lv_obj_t * btn_cycle_label = (lv_obj_t *) e->user_data;
     cycle                    = !cycle;
 
-    if(cycle) lv_label_set_text(btn_cycle_label, SYMBOL_CYCLE "");
-    else lv_label_set_text(btn_cycle_label, SYMBOL_BAN "");
+    if(cycle) lv_label_set_text(btn_cycle_label, CUSTOM_SYMBOL_CYCLE "");
+    else lv_label_set_text(btn_cycle_label, CUSTOM_SYMBOL_BAN "");
 }
 
 static void control_click(lv_event_t * e)
