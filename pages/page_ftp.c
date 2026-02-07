@@ -1,0 +1,82 @@
+#include "page_ftp.h"
+
+static void back_click(lv_event_t * e);
+static void btn_start_click(lv_event_t * e);
+static void btn_stop_click(lv_event_t * e);
+
+lv_obj_t * page_ftp()
+{
+    lv_obj_t * screen = lv_obj_create(lv_scr_act());
+    lv_obj_remove_style_all(screen);
+    lv_obj_clear_flag(screen, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(screen, lv_pct(100), lv_pct(100));
+
+    lv_obj_t * btn_start = lv_btn_create(screen);
+    lv_obj_set_size(btn_start, lv_pct(60), lv_pct(25));
+    lv_obj_align(btn_start, LV_ALIGN_TOP_MID, 0, lv_pct(20));
+    lv_obj_t * btn_start_label = lv_label_create(btn_start);
+    lv_label_set_text(btn_start_label, "start vsftpd");
+    lv_obj_center(btn_start_label);
+    lv_obj_add_event_cb(btn_start, btn_start_click, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_t * btn_stop = lv_btn_create(screen);
+    lv_obj_set_size(btn_stop, lv_pct(60), lv_pct(25));
+    lv_obj_align(btn_stop, LV_ALIGN_TOP_MID, 0, lv_pct(50));
+    lv_obj_t * btn_stop_label = lv_label_create(btn_stop);
+    lv_label_set_text(btn_stop_label, "kill vsftpd");
+    lv_obj_center(btn_stop_label);
+    lv_obj_add_event_cb(btn_stop, btn_stop_click, LV_EVENT_CLICKED, NULL);
+
+    FILE * fp;
+    char buffer[1024];
+    char ip[20];
+
+    // 执行ifconfig命令
+    fp = popen("ifconfig", "r");
+    if(fp == NULL) {
+        perror("popen failed");
+    } else {
+        // 解析输出，查找IP地址
+        while(fgets(buffer, sizeof(buffer), fp) != NULL) {
+            // 查找包含"inet"的行（IPv4地址）
+            if(strstr(buffer, "inet addr:") != NULL && strstr(buffer, "127.0.0.1") == NULL) {
+                char * ip_start = strstr(buffer, "inet addr:") + 10;
+                sscanf(ip_start, "%s", ip);
+                break;
+            }
+        }
+        pclose(fp);
+    }
+
+
+    lv_obj_t * label_ip = lv_label_create(screen);
+    lv_label_set_text(label_ip, ip);
+    lv_obj_align(label_ip, LV_ALIGN_TOP_MID, 0, lv_pct(80));
+
+    lv_obj_t * btn_back = lv_btn_create(screen);
+    lv_obj_set_size(btn_back, lv_pct(25), lv_pct(12));
+    lv_obj_align(btn_back, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_t * btn_back_label = lv_label_create(btn_back);
+    lv_label_set_text(btn_back_label, CUSTOM_SYMBOL_BACK "");
+    lv_obj_center(btn_back_label);
+    lv_obj_add_event_cb(btn_back, back_click, LV_EVENT_CLICKED, NULL);
+
+    return screen;
+}
+
+static void back_click(lv_event_t * e)
+{
+    page_back();
+}
+
+static void btn_start_click(lv_event_t * e)
+{
+    system("chmod 777 /mnt/UDISK/vsftpd");
+    system("/mnt/UDISK/vsftpd /mnt/UDISK/vsftpd.conf &");
+}
+
+static void btn_stop_click(lv_event_t * e)
+{
+    system("killall vsftpd &");
+}
+

@@ -7,6 +7,7 @@ lv_obj_t * page_image(char * src)
     lv_obj_t * screen = lv_obj_create(lv_scr_act());
     lv_obj_remove_style_all(screen);
     lv_obj_set_size(screen, lv_pct(100), lv_pct(100));
+    lv_obj_clear_flag(screen, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_img_header_t header;
     ffmpeg_get_img_header(src, &header);
@@ -14,8 +15,14 @@ lv_obj_t * page_image(char * src)
     lv_obj_t * img = lv_img_create(screen);
     lv_obj_set_size(img, header.w, header.h);
     lv_obj_center(img);
-    lv_img_set_src(img, src);
-    //lv_img_set_zoom(img, 128);
+    if(header.w != 0 && header.h != 0){
+        lv_img_set_src(img, src);
+        double scale = fmin((double)LV_SCR_WIDTH / header.w, (double)LV_SCR_HEIGHT / header.h);
+        LV_LOG_USER("%dx%d, scale=%.8g\n", header.w, header.h, scale);
+        lv_obj_set_style_transform_zoom(img, (int)(256 * scale), 0);
+    }
+
+    // lv_img_set_zoom(img, 128);
 
     lv_obj_t * btn_back = lv_btn_create(screen);
     lv_obj_set_size(btn_back, lv_pct(25), lv_pct(12));

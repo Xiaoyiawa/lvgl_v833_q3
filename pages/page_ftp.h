@@ -1,5 +1,5 @@
-#ifndef PROJ_PAGE_IMAGE_H
-#define PROJ_PAGE_IMAGE_H
+#ifndef PROJ_PAGE_FTP_H
+#define PROJ_PAGE_FTP_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,7 +12,10 @@ extern "C" {
 #include "../lv_lib_100ask/lv_lib_100ask.h"
 #include "lv_drv_conf.h"
 #include "page_manager.h"
-#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 /*********************
  *      DEFINES
@@ -25,7 +28,7 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-lv_obj_t * page_image(char * src);
+lv_obj_t * page_ftp();
 
 /**********************
  *      MACROS

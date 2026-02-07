@@ -20,7 +20,9 @@
 			"lv_lib_100ask_conf.h": "c",
 			"audio_ctrl.h": "c",
 			"page_audio.h": "c",
-			"lv_freetype.h": "c"
+			"lv_freetype.h": "c",
+			"page_image.h": "c",
+			"stdlib.h": "c"
 		}
 	}
 }

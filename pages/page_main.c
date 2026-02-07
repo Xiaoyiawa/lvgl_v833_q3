@@ -8,6 +8,7 @@ static void btn_robot_click(lv_event_t * e);
 static void btn_file_manager_click(lv_event_t * e);
 static void btn_calculator_click(lv_event_t * e);
 static void btn_bird_click(lv_event_t * e);
+static void btn_ftp_click(lv_event_t * e);
 static void btn_apple_click(lv_event_t * e);
 static void timer_tick(lv_event_t * e);
 
@@ -57,7 +58,14 @@ lv_obj_t * page_main() {
     lv_label_set_text(btn_label_bird, "flappy bird");
     lv_obj_center(btn_label_bird);
     lv_obj_add_event_cb(btn_bird, btn_bird_click, LV_EVENT_CLICKED, NULL);
-    
+
+    lv_obj_t * btn_ftp = lv_btn_create(screen);
+    lv_obj_set_size(btn_ftp, lv_pct(60), lv_pct(25));
+    lv_obj_align(btn_ftp, LV_FLEX_ALIGN_CENTER, 0, 0);
+    lv_obj_t * btn_label_ftp = lv_label_create(btn_ftp);
+    lv_label_set_text(btn_label_ftp, "ftp");
+    lv_obj_center(btn_label_ftp);
+    lv_obj_add_event_cb(btn_ftp, btn_ftp_click, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t * btn_demo = lv_btn_create(screen);
     lv_obj_set_size(btn_demo, lv_pct(60), lv_pct(25));
@@ -102,6 +110,11 @@ static void btn_calculator_click(lv_event_t * e)
 static void btn_bird_click(lv_event_t * e)
 {
     page_open(page_bird(), NULL);
+}
+
+static void btn_ftp_click(lv_event_t * e)
+{
+    page_open(page_ftp(), NULL);
 }
 
 static void btn_apple_click(lv_event_t * e)

@@ -5,6 +5,7 @@
 #include "lv_lib_100ask/lv_lib_100ask.h"
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <linux/fb.h>
 #include <sys/types.h>
@@ -25,8 +26,9 @@
 #include "pages/page_calculator.h"
 #include "pages/page_apple.h"
 #include "pages/page_image.h"
+#include "pages/page_ftp.h"
 
-#define DISP_BUF_SIZE (240 * 240)
+#define DISP_BUF_SIZE (LV_SCR_WIDTH * LV_SCR_HEIGHT)
 
 #define PATH_MAX_LENGTH 256
 extern char homepath[PATH_MAX_LENGTH] = {0};
@@ -124,11 +126,12 @@ int main(int argc, char *argv[])
 
     lv_init();
     fbdev_init();
-    
-    static lv_color_t buf[DISP_BUF_SIZE];
-    
+
+    static lv_color_t bufA[DISP_BUF_SIZE];
+    static lv_color_t bufB[DISP_BUF_SIZE];
+
     static lv_disp_draw_buf_t disp_buf;
-    lv_disp_draw_buf_init(&disp_buf, buf, NULL, DISP_BUF_SIZE);
+    lv_disp_draw_buf_init(&disp_buf, bufA, bufB, DISP_BUF_SIZE);
     
     static lv_disp_drv_t disp_drv;
     lv_disp_drv_init(&disp_drv);
@@ -339,6 +342,9 @@ void setDontDeepSleep(bool b){
 void switchRobot(void){
     switchBackground();
 
+    // 我没招了，杀vsftpd还能连带着把lvgl的图像给干没
+    // 所以我选择在退出的时候顺带也把vsftpd杀了
+    system("killall vsftpd");
     system("chmod 777 ./switch_robot");
     system("sh ./switch_robot");
 }
@@ -356,8 +362,8 @@ void switchForeground(void)
     chdir(homepath);
     system("chmod 777 switch_foreground");
     system("sh ./switch_foreground &");
-    //等待自己被脚本杀死，然后开始新的轮回
-    //因为这里确实处理不好设备占用问题，只能把两个全杀了再重启自己
+    // 等待自己被脚本杀死，然后开始新的轮回
+    // 因为这里确实处理不好设备占用问题，只能把两个全杀了再重启自己
     sleep(114514);
 }
 

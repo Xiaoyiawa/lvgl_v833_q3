@@ -16,6 +16,12 @@
 #include "lv_conf.h"
 
 /*********************
+ * CUSTOM ADDITION
+ *********************/
+#define LV_SCR_WIDTH 240
+#define LV_SCR_HEIGHT 240
+
+/*********************
  * DELAY INTERFACE
  *********************/
 #define LV_DRV_DELAY_INCLUDE  <stdint.h>            /*Dummy include by default*/
