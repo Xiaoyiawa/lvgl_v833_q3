@@ -22,7 +22,8 @@
 			"page_audio.h": "c",
 			"lv_freetype.h": "c",
 			"page_image.h": "c",
-			"stdlib.h": "c"
+			"stdlib.h": "c",
+			"page_bird.h": "c"
 		}
 	}
 }

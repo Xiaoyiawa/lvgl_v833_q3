@@ -23,8 +23,6 @@ static bool started;
 static bool over;
 static int score;
 
-#define SCREEN_WIDTH 240
-#define SCREEN_HEIGHT 240
 #define BIRD_WIDTH 36
 #define BIRD_HEIGHT 24
 #define TUBE_WIDTH 56
@@ -32,10 +30,10 @@ static int score;
 #define GAP_HEIGHT 100
 #define BIRD_X 48
 #define BIRD_Y_INIT 135
-#define TUBE_AX_INIT SCREEN_WIDTH
-#define TUBE_BX_INIT SCREEN_WIDTH * 1.5 + TUBE_WIDTH * 0.5
-#define RAND_MIN (SCREEN_HEIGHT - GAP_HEIGHT) * 0.25
-#define RAND_MAX (SCREEN_HEIGHT - GAP_HEIGHT) * 0.75
+#define TUBE_AX_INIT LV_SCR_WIDTH
+#define TUBE_BX_INIT LV_SCR_WIDTH * 1.5 + TUBE_WIDTH * 0.5
+#define RAND_MIN (LV_SCR_HEIGHT - GAP_HEIGHT) * 0.25
+#define RAND_MAX (LV_SCR_HEIGHT - GAP_HEIGHT) * 0.75
 
 static void game_init();
 static void game_score();
@@ -55,7 +53,7 @@ lv_obj_t * page_bird()
     lv_obj_set_size(screen, lv_pct(100), lv_pct(100));
 
     lv_obj_t * background = lv_img_create(screen);
-    lv_obj_set_size(background, SCREEN_WIDTH, SCREEN_HEIGHT);
+    lv_obj_set_size(background, LV_SCR_WIDTH, LV_SCR_HEIGHT);
     lv_obj_set_pos(background, 0, 0);
     lv_img_set_src(background, "/mnt/UDISK/lvgl/res/bird/background.png");
 
@@ -92,7 +90,7 @@ lv_obj_t * page_bird()
     lv_label_set_text(label_score, "0");
 
     touch_area = lv_obj_create(screen);
-    lv_obj_set_size(touch_area, SCREEN_WIDTH, SCREEN_HEIGHT);
+    lv_obj_set_size(touch_area, LV_SCR_WIDTH, LV_SCR_HEIGHT);
     lv_obj_set_pos(touch_area, 0, 0);
     lv_obj_set_style_bg_opa(touch_area, LV_OPA_0, 0);
     lv_obj_set_style_border_opa(touch_area, LV_OPA_0, 0);
@@ -132,7 +130,7 @@ static void timer_move_tick(lv_event_t * e)
     birdY += birdSpeed;
     if(birdSpeed < -15) birdSpeed = -15;
     if(birdY < BIRD_HEIGHT) birdY = BIRD_HEIGHT;
-    if(birdY > SCREEN_HEIGHT) birdY = SCREEN_HEIGHT;
+    if(birdY > LV_SCR_HEIGHT) birdY = LV_SCR_HEIGHT;
 
     if(!over) {
         tubeAX -= 3;
@@ -140,19 +138,19 @@ static void timer_move_tick(lv_event_t * e)
     }
 
     if(tubeAX < -TUBE_WIDTH) {
-        tubeAX = SCREEN_WIDTH;
+        tubeAX = LV_SCR_WIDTH;
         tubeAY = rand_between(RAND_MIN, RAND_MAX);
         tubeAScored = false;
     }
     if(tubeBX < -TUBE_WIDTH) {
-        tubeBX = SCREEN_WIDTH;
+        tubeBX = LV_SCR_WIDTH;
         tubeBY = rand_between(RAND_MIN, RAND_MAX);
         tubeBScored = false;
     }
 
-    lv_obj_set_pos(bird, BIRD_X, SCREEN_HEIGHT - birdY);
-    lv_obj_set_pos(tubeA, tubeAX, -TUBE_HEIGHT + SCREEN_HEIGHT + (TUBE_HEIGHT - GAP_HEIGHT) / 2 - tubeAY);
-    lv_obj_set_pos(tubeB, tubeBX, -TUBE_HEIGHT + SCREEN_HEIGHT + (TUBE_HEIGHT - GAP_HEIGHT) / 2 - tubeBY);
+    lv_obj_set_pos(bird, BIRD_X, LV_SCR_HEIGHT - birdY);
+    lv_obj_set_pos(tubeA, tubeAX, -TUBE_HEIGHT + LV_SCR_HEIGHT + (TUBE_HEIGHT - GAP_HEIGHT) / 2 - tubeAY);
+    lv_obj_set_pos(tubeB, tubeBX, -TUBE_HEIGHT + LV_SCR_HEIGHT + (TUBE_HEIGHT - GAP_HEIGHT) / 2 - tubeBY);
 
     if(!over) {
         if(BIRD_X - TUBE_WIDTH < tubeAX && tubeAX < BIRD_X + BIRD_WIDTH) {
@@ -199,7 +197,7 @@ static void game_init()
     tubeAScored = false;
     tubeBScored = false;
 
-    lv_obj_set_pos(bird, BIRD_X, SCREEN_HEIGHT - birdY);
+    lv_obj_set_pos(bird, BIRD_X, LV_SCR_HEIGHT - birdY);
     lv_obj_set_pos(tubeA, tubeAX, tubeAY - (TUBE_HEIGHT / 2));
     lv_obj_set_pos(tubeB, tubeBX, tubeBY - (TUBE_HEIGHT / 2));
 
