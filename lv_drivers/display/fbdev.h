@@ -40,6 +40,8 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
+struct fb_var_screeninfo * fbdev_get_vinfo(void);
+int fbdev_get_fbd(void);
 void fbdev_init(void);
 void fbdev_exit(void);
 void fbdev_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_p);

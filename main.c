@@ -37,8 +37,9 @@ extern int dispd  = 0;     // 背光
 extern int fbd    = 0;     // 帧缓冲设备
 extern int powerd = 0;     //电源按钮
 extern int homed  = 0;     // 主页按钮
+struct fb_var_screeninfo * vinfo;  //屏幕参数
 
-extern uint32_t sleepTs     = -1;
+extern uint32_t sleepTs      = -1;
 extern uint32_t homeClickTs = -1;
 extern uint32_t backgroundTs = -1;
 
@@ -117,15 +118,16 @@ int main(int argc, char *argv[])
     setenv("TZ", "CST-8", 1);
     tzset();
 
-    fbd = open("/dev/fb0", O_RDWR);
     dispd = open("/dev/disp", O_RDWR);
+    fbdev_init();
+    fbd = fbdev_get_fbd();
     lcdInit();
+    lcdClose();
     lcdOpen();
-    touchOpen();
     lcdBrightness(25);
+    touchOpen();
 
     lv_init();
-    fbdev_init();
 
     static lv_color_t bufA[DISP_BUF_SIZE];
     static lv_color_t bufB[DISP_BUF_SIZE];
@@ -229,8 +231,9 @@ uint32_t tick_get(void)
 
 void lcdInit(void)
 {
-    //int rotation = 1;
-    //ioctl(fbd, 0x4619, &rotation);
+    vinfo = fbdev_get_vinfo();
+    vinfo->rotate                    = 3;
+    ioctl(fbd, 0x4601u, vinfo);
 }
 
 void lcdOpen(void) {
@@ -241,7 +244,7 @@ void lcdOpen(void) {
 }
 
 void lcdClose(void) {
-    char buffer[24] = {0};
+    int buffer[8] = {0};
     ioctl(dispd, 0xFu, buffer);
     printf("[lcd]closed\n");
 }
@@ -261,8 +264,7 @@ void touchClose(void) {
 }
 
 void lcdRefresh(void) {
-    int buffer[8] = {0};
-	ioctl(fbd, 0x4606u, buffer);
+    ioctl(fbd, 0x4606u, vinfo);
 }
 
 void lcdBrightness(int brightness) {
