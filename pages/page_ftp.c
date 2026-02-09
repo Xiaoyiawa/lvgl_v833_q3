@@ -27,13 +27,14 @@ lv_obj_t * page_ftp()
     lv_obj_center(btn_stop_label);
     lv_obj_add_event_cb(btn_stop, btn_stop_click, LV_EVENT_CLICKED, NULL);
 
+    
     FILE * fp;
     char buffer[1024];
-    char ip[20];
+    char ip[20] = "";
 
     // 执行ifconfig命令
     fp = popen("ifconfig", "r");
-    if(fp == NULL) {
+    if (fp == NULL) {
         perror("popen failed");
     } else {
         // 解析输出，查找IP地址
@@ -47,11 +48,11 @@ lv_obj_t * page_ftp()
         }
         pclose(fp);
     }
-
-
+    
     lv_obj_t * label_ip = lv_label_create(screen);
-    lv_label_set_text(label_ip, ip);
     lv_obj_align(label_ip, LV_ALIGN_TOP_MID, 0, lv_pct(80));
+    if(strlen(ip) == 0) lv_label_set_text(label_ip, "No Connection");
+    else lv_label_set_text(label_ip, ip);
 
     lv_obj_t * btn_back = lv_btn_create(screen);
     lv_obj_set_size(btn_back, lv_pct(25), lv_pct(12));

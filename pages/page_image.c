@@ -13,6 +13,8 @@ static lv_coord_t touch_last_y;
 static lv_img_header_t header;
 static lv_coord_t img_scaled_w;
 static lv_coord_t img_scaled_h;
+static lv_coord_t bound_x;
+static lv_coord_t bound_y;
 
 static void back_click(lv_event_t * e);
 static void slider_scale_changed(lv_event_t * e);
@@ -38,8 +40,10 @@ lv_obj_t * page_image(char * src)
         scale_default = fmin((double)LV_SCR_WIDTH / header.w, (double)LV_SCR_HEIGHT / header.h);
         img_scaled_w  = (lv_coord_t)(header.w * scale_default);
         img_scaled_h  = (lv_coord_t)(header.h * scale_default);
-        LV_LOG_USER("[page_image]%dx%d, scale=%.8g\n", header.w, header.h, scale_default);
+        bound_x       = fmax(0, (img_scaled_w - LV_SCR_WIDTH) / 2);
+        bound_y       = fmax(0, (img_scaled_h - LV_SCR_HEIGHT) / 2);
         lv_obj_set_style_transform_zoom(img, (lv_coord_t)(256 * scale_default), 0);
+        LV_LOG_USER("[page_image]%dx%d, scale=%.8g\n", header.w, header.h, scale_default);
     }
 
     touch_area = lv_obj_create(screen);
@@ -57,10 +61,9 @@ lv_obj_t * page_image(char * src)
     slider_scale = lv_slider_create(screen);
     lv_obj_set_size(slider_scale, lv_pct(10), lv_pct(80));
     lv_obj_align(slider_scale, LV_ALIGN_LEFT_MID, lv_pct(85), 0);
-    lv_slider_set_range(slider_scale, 1, 10);
-    lv_slider_set_value(slider_scale, 1, LV_ANIM_OFF);
+    lv_slider_set_range(slider_scale, 0, 100);
+    lv_slider_set_value(slider_scale, 0, LV_ANIM_OFF);
     lv_obj_add_event_cb(slider_scale, slider_scale_changed, LV_EVENT_VALUE_CHANGED, NULL);
-
 
     btn_back = lv_btn_create(screen);
     lv_obj_set_size(btn_back, lv_pct(25), lv_pct(12));
@@ -83,10 +86,19 @@ static void slider_scale_changed(lv_event_t * e)
 {
     lv_obj_t * slider = lv_event_get_target(e);
     int value         = lv_slider_get_value(slider);
-    double scale_new  = value * scale_default;
+    double scale_new  = pow(2, log2(10) * value / 100) * scale_default;
+
     img_scaled_w      = (lv_coord_t)(header.w * scale_new);
     img_scaled_h      = (lv_coord_t)(header.h * scale_new);
     lv_obj_set_style_transform_zoom(img, (int)(256 * scale_new), 0);
+
+    lv_coord_t img_x = lv_obj_get_x_aligned(img);
+    lv_coord_t img_y = lv_obj_get_y_aligned(img);
+
+    bound_x = fmax(0, (img_scaled_w - LV_SCR_WIDTH) / 2);
+    bound_y = fmax(0, (img_scaled_h - LV_SCR_HEIGHT) / 2);
+
+    lv_obj_set_pos(img, fmax(fmin(img_x, 0 + bound_x), 0 - bound_x), fmax(fmin(img_y, 0 + bound_y), 0 - bound_y));
 }
 
 static void touch_pressing(lv_event_t * e)
@@ -108,7 +120,12 @@ static void touch_pressing(lv_event_t * e)
                 lv_coord_t dy = point.y - touch_last_y;
                 if(abs(dx) > 0 || abs(dy) > 0) {
                     moved = true;
-                    lv_obj_set_pos(img, lv_obj_get_x_aligned(img) + dx, lv_obj_get_y_aligned(img) + dy);
+
+                    lv_coord_t img_x = lv_obj_get_x_aligned(img) + dx;
+                    lv_coord_t img_y = lv_obj_get_y_aligned(img) + dy;
+
+                    lv_obj_set_pos(img, fmax(fmin(img_x, 0 + bound_x), 0 - bound_x),
+                                   fmax(fmin(img_y, 0 + bound_y), 0 - bound_y));
                 }
                 touch_last_x = point.x;
                 touch_last_y = point.y;
