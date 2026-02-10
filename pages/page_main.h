@@ -13,6 +13,9 @@ extern "C" {
 #include "page_manager.h"
 #include <sys/time.h>
 #include <time.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 /*********************
  *      DEFINES

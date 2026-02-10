@@ -54,7 +54,7 @@ static void lv_text_clock_constructor(const lv_obj_class_t * class_p, lv_obj_t *
     lv_text_clock_update_time(clock);
     
     // 创建更新定时器（每秒更新一次
-    clock->timer = lv_timer_create(lv_text_clock_timer_cb, 1000, obj);
+    clock->timer = lv_timer_create(lv_text_clock_timer_cb, 250, obj);
     if(clock->timer == NULL) {
         LV_LOG_ERROR("Failed to create timer for text clock\n");
         return;
