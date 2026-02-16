@@ -31,8 +31,6 @@ typedef struct
     AVCodecContext * audio_codec_ctx;
     AVCodecContext * video_codec_ctx;
     SwrContext * swr_ctx;
-    AVFrame * frame;
-    AVPacket pkt;
     int audio_stream_index;
     int video_stream_index;
 
@@ -52,12 +50,16 @@ typedef struct
     int video_src_linesize[4];
     int video_dst_linesize[4];
     enum AVPixelFormat video_dst_pix_fmt;
+    struct SwsContext * sws_ctx;   // 图像缩放上下文
+    int64_t video_last_pts; // 上一帧的 PTS（用于帧率控制）
+    volatile bool video_refresh_request;
     lv_obj_t * video_area;
     lv_img_dsc_t img_dsc;
 
     // 播放控制
     volatile int state;
-    volatile int seek_request;
+    volatile bool seek_request_audio;
+    volatile bool seek_request_video;
     volatile int64_t seek_pos;
     pthread_t audio_thread;
     pthread_t video_thread;

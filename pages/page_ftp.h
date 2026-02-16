@@ -16,6 +16,8 @@ extern "C" {
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include "../lv_drivers/display/fbdev.h"
 
 /*********************
  *      DEFINES

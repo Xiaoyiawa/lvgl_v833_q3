@@ -73,7 +73,19 @@ static void back_click(lv_event_t * e)
 static void btn_start_click(lv_event_t * e)
 {
     system("chmod 777 /mnt/UDISK/vsftpd");
-    system("/mnt/UDISK/vsftpd /mnt/UDISK/vsftpd.conf &");
+
+    pid_t cpid = fork();
+
+    if(cpid == 0) {
+        //此处为子进程
+        const char * path = "/mnt/UDISK/vsftpd";
+        char * argv[]     = {"/mnt/UDISK/vsftpd", "/mnt/UDISK/vsftpd.conf", NULL};
+        execv(path, argv);
+        
+        exit(127);  //防止意外执行失败
+    }
+
+    //system("/mnt/UDISK/vsftpd /mnt/UDISK/vsftpd.conf &");
 }
 
 static void btn_stop_click(lv_event_t * e)

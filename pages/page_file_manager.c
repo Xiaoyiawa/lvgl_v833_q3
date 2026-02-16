@@ -49,6 +49,9 @@ static void explorer_event_handler(lv_event_t * e)
            str_end_with(file_name, ".ogg", false) || str_end_with(file_name, ".m4a", false) ||
            str_end_with(file_name, ".aac", false) || str_end_with(file_name, ".pcm", false))
             page_open(page_audio(&file_name), NULL);
+
+        if(str_end_with(file_name, ".mp4", false))
+            page_open(page_apple(&file_name), NULL);
     }
 }
 

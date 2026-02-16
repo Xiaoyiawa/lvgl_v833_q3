@@ -9,6 +9,7 @@ extern "C" {
  *      INCLUDES
  *********************/
 #include "../lvgl/lvgl.h"
+#include "lv_drv_conf.h"
 #include "../lv_lib_100ask/lv_lib_100ask.h"
 #include "page_manager.h"
 #include "platform/ff_player.h"
@@ -25,7 +26,7 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-lv_obj_t * page_apple();
+lv_obj_t * page_apple(char * filename);
 
 /**********************
  *      MACROS

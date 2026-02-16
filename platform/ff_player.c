@@ -5,10 +5,11 @@
 
 
 static void * audio_thread_func(void * arg);
-static void * video_thread_func(void * arg);
 static bool ffmpeg_pix_fmt_has_alpha(enum AVPixelFormat pix_fmt);
+static bool ffmpeg_pix_fmt_is_yuv(enum AVPixelFormat pix_fmt);
 static int ffmpeg_image_allocate(ff_player_t * player);
 static uint8_t * ffmpeg_get_img_data(ff_player_t * player);
+static void video_refresh_cb(void * user_data);
 
 ff_player_t * player_create()
 {
@@ -22,9 +23,10 @@ ff_player_t * player_create()
 
     // 初始化状态
     player->state = PLAYER_STOPPED;
-    player->seek_request = 0;
-    player->current_pts = 0;
-    player->finish_callback_ptr = NULL;
+    player->seek_request_audio        = false;
+    player->seek_request_video        = false;
+    player->current_pts               = 0;
+    player->finish_callback_ptr       = NULL;
 
     return player;
 }
@@ -213,7 +215,7 @@ int player_init_video(ff_player_t * player, lv_obj_t * lv_obj)
 
     if(player->video_stream_index == -1) {
         fprintf(stderr, "未找到视频流\n");
-        ret = -1;
+        ret = -2;
         goto cleanup;
     }
 
@@ -222,40 +224,41 @@ int player_init_video(ff_player_t * player, lv_obj_t * lv_obj)
     const AVCodec * codec        = avcodec_find_decoder(codecpar->codec_id);
     if(!codec) {
         fprintf(stderr, "未找到对应的解码器\n");
-        ret = -1;
+        ret = -3;
         goto cleanup;
     }
 
     player->video_codec_ctx = avcodec_alloc_context3(codec);
     if(!player->video_codec_ctx) {
         fprintf(stderr, "无法分配解码器上下文\n");
-        ret = -1;
+        ret = -4;
         goto cleanup;
     }
 
     if(avcodec_parameters_to_context(player->video_codec_ctx, codecpar) < 0) {
         fprintf(stderr, "无法复制编解码器参数到解码器上下文\n");
-        ret = -1;
+        ret = -5;
         goto cleanup;
     }
 
     if(avcodec_open2(player->video_codec_ctx, codec, NULL) < 0) {
         fprintf(stderr, "无法打开解码器\n");
-        ret = -1;
+        ret = -6;
         goto cleanup;
     }
 
+    bool has_alpha = ffmpeg_pix_fmt_has_alpha(player->video_codec_ctx->pix_fmt);
+    player->video_dst_pix_fmt = (has_alpha ? AV_PIX_FMT_BGRA : AV_PIX_FMT_BGR0);
+
     if(ffmpeg_image_allocate(player) < 0) {
         LV_LOG_ERROR("ffmpeg image allocate failed");
-        ret = -1;
+        ret = -7;
         goto cleanup;
     }
 
     // 在img_dsc对象里写入图像参数
-    bool has_alpha = ffmpeg_pix_fmt_has_alpha(player->video_codec_ctx->pix_fmt);
     int width           = player->video_codec_ctx->width;
     int height           = player->video_codec_ctx->height;
-    player->video_dst_pix_fmt = (has_alpha ? AV_PIX_FMT_BGRA : AV_PIX_FMT_BGR0);
 
     uint32_t data_size      = 0;
     if(has_alpha)    data_size = width * height * LV_IMG_PX_SIZE_ALPHA_BYTE;
@@ -270,23 +273,45 @@ int player_init_video(ff_player_t * player, lv_obj_t * lv_obj)
 
     printf("width=%d, height=%d, data_size=%d\n", width, height, data_size);
 
-    //运行到这一句，程序崩溃
     lv_img_set_src(player->video_area, &(player->img_dsc));
 
-    ret = 0;
-
-    /*
-    if(pthread_create(&player->video_thread, NULL, video_thread_func, player) != 0) {
-        fprintf(stderr, "无法创建视频线程\n");
-        goto cleanup;
+    int swsFlags = SWS_BILINEAR;
+    if(ffmpeg_pix_fmt_is_yuv(player->video_codec_ctx->pix_fmt)) {
+        if((width & 0x7) || (height & 0x7)) swsFlags |= SWS_ACCURATE_RND;
     }
 
+    lv_obj_update_layout(player->video_area);
+
+    player->sws_ctx =
+        sws_getContext(player->video_codec_ctx->width, player->video_codec_ctx->height,
+                       player->video_codec_ctx->pix_fmt, lv_obj_get_width(player->video_area),
+                       lv_obj_get_height(player->video_area), player->video_dst_pix_fmt, swsFlags, NULL, NULL, NULL);
+    if(!player->sws_ctx) {
+        fprintf(stderr, "无法创建图像转换上下文\n");
+        ret = -9;
+        goto cleanup;
+    }
+    
     pthread_mutex_unlock(&player->mutex);
-    */
+    ret = 0;
     return ret;
 
 cleanup:
-    avcodec_free_context(&player->video_codec_ctx);
+    pthread_mutex_unlock(&player->mutex);
+    
+    if(player->sws_ctx) sws_freeContext(player->sws_ctx);
+
+    if(player->video_codec_ctx) avcodec_free_context(&player->video_codec_ctx);
+
+    if(player->video_dst_data[0] != NULL) {
+        av_free(player->video_dst_data[0]);
+        player->video_dst_data[0] = NULL;
+    }
+
+    if(player->video_src_data[0] != NULL) {
+        av_free(player->video_src_data[0]);
+        player->video_src_data[0] = NULL;
+    }
     return ret;
 }
 
@@ -298,8 +323,12 @@ static int ffmpeg_image_allocate(ff_player_t * player)
     int ret;
 
     /* allocate image where the decoded image will be put */
-    ret = av_image_alloc(player->video_src_data, player->video_src_linesize, player->video_codec_ctx->width,
-                         player->video_codec_ctx->height, player->video_codec_ctx->pix_fmt, 4);
+    ret = av_image_alloc(player->video_src_data, 
+                            player->video_src_linesize, 
+                            player->video_codec_ctx->width,
+                            player->video_codec_ctx->height, 
+                            player->video_codec_ctx->pix_fmt,
+                            4);
 
     if(ret < 0) {
         LV_LOG_ERROR("Could not allocate src raw video buffer");
@@ -308,8 +337,12 @@ static int ffmpeg_image_allocate(ff_player_t * player)
 
     LV_LOG_INFO("alloc video_src_bufsize = %d", ret);
 
-    ret = av_image_alloc(player->video_dst_data, player->video_dst_linesize, player->video_codec_ctx->width,
-                         player->video_codec_ctx->height, player->video_dst_pix_fmt, 4);
+    ret = av_image_alloc(player->video_dst_data, 
+                            player->video_dst_linesize, 
+                            player->video_codec_ctx->width,
+                            player->video_codec_ctx->height, 
+                            player->video_dst_pix_fmt, 
+                            4);
 
     if(ret < 0) {
         LV_LOG_ERROR("Could not allocate dst raw video buffer");
@@ -317,18 +350,6 @@ static int ffmpeg_image_allocate(ff_player_t * player)
     }
 
     LV_LOG_INFO("allocate video_dst_bufsize = %d", ret);
-
-    player->frame = av_frame_alloc();
-
-    if(player->frame == NULL) {
-        LV_LOG_ERROR("Could not allocate frame");
-        return -1;
-    }
-
-    /* initialize packet, set data to NULL, let the demuxer fill it */
-    av_init_packet(&player->pkt);
-    player->pkt.data = NULL;
-    player->pkt.size = 0;
 
     return 0;
 }
@@ -346,6 +367,17 @@ static bool ffmpeg_pix_fmt_has_alpha(enum AVPixelFormat pix_fmt)
     }
 
     return (desc->flags & AV_PIX_FMT_FLAG_ALPHA) ? true : false;
+}
+
+static bool ffmpeg_pix_fmt_is_yuv(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor * desc = av_pix_fmt_desc_get(pix_fmt);
+
+    if(desc == NULL) {
+        return false;
+    }
+
+    return !(desc->flags & AV_PIX_FMT_FLAG_RGB) && desc->nb_components >= 2;
 }
 
 static void * audio_thread_func(void * arg)
@@ -368,7 +400,7 @@ static void * audio_thread_func(void * arg)
     while(player->state != PLAYER_STOPPED) {
 
         // 检查跳转请求
-        if(player->seek_request) {
+        if(player->seek_request_audio) {
             int64_t seek_target = player->seek_pos;
             if(av_seek_frame(player->format_ctx, player->audio_stream_index, seek_target, AVSEEK_FLAG_BACKWARD) < 0) {
                 fprintf(stderr, "跳转失败\n");
@@ -376,7 +408,7 @@ static void * audio_thread_func(void * arg)
                 avcodec_flush_buffers(player->audio_codec_ctx);
                 player->current_pts = seek_target;
             }
-            player->seek_request = 0;
+            player->seek_request_audio = false;
         }
         // 检查暂停状态
         if(player->state == PLAYER_PAUSED) {
@@ -385,9 +417,8 @@ static void * audio_thread_func(void * arg)
         }
 
         int ret = av_read_frame(player->format_ctx, packet);
+        // 文件结束或错误
         if(ret < 0) {
-            // 文件结束或错误
-            // break;
             player->state = PLAYER_PAUSED;
             if(player->finish_callback_ptr) {
                 (*player->finish_callback_ptr)(player);
@@ -434,9 +465,47 @@ static void * audio_thread_func(void * arg)
 
                 av_frame_unref(frame);
             }
+            av_packet_unref(packet);
+            continue;
         }
 
-        av_packet_unref(packet);
+        if(packet->stream_index == player->video_stream_index) {
+            ret = avcodec_send_packet(player->video_codec_ctx, packet);
+            if(ret < 0) {
+                av_packet_unref(packet);
+                continue;
+            }
+
+            while(ret >= 0) {
+                ret = avcodec_receive_frame(player->video_codec_ctx, frame);
+                if(ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                    break;
+                else if(ret < 0) {
+                    fprintf(stderr, "视频解码错误\n");
+                    break;
+                }
+
+                sws_scale(player->sws_ctx, (const uint8_t * const *)frame->data, frame->linesize, 0,
+                          player->video_codec_ctx->height, player->video_dst_data, player->video_dst_linesize);
+
+                // 更新 LVGL 图像（需要线程安全）
+                // 然而线程不安全是能跑的，async_call反而会崩（因为有些东西没处理好，以后再说，反正现在能用了）
+                lv_img_cache_invalidate_src(lv_img_get_src(player->video_area));
+                lv_obj_invalidate(player->video_area);
+                /*
+                while(player->video_refresh_request) {
+                    usleep(2000);
+                }
+                player->video_refresh_request = true;
+                lv_async_call(video_refresh_cb, player);
+                */
+
+                av_frame_unref(frame);
+            }
+            av_packet_unref(packet);
+            continue;
+        }
+
     }
 
 cleanup:
@@ -447,14 +516,10 @@ cleanup:
     return NULL;
 }
 
-static void * video_thread_func(void * arg)
-{
-    ff_player_t * player = (ff_player_t *)arg;
-
-    while(player->state != PLAYER_STOPPED) {
-        sleep(1);
-    }
-    return NULL;
+static void video_refresh_cb(void *user_data) {
+    ff_player_t * player = (ff_player_t *)user_data;
+    lv_obj_invalidate(player->video_area);
+    player->video_refresh_request = false;
 }
 
 int player_pause(ff_player_t * player)
@@ -497,14 +562,11 @@ int player_stop(ff_player_t * player)
         player->audio_thread = 0;
     }
 
-    if(player->video_thread) {
-        pthread_join(player->video_thread, NULL);
-        player->video_thread = 0;
+    // 清理资源
+    if (player->video_area) {
+        lv_img_cache_invalidate_src(lv_img_get_src(player->video_area));
     }
 
-    pthread_mutex_lock(&player->mutex);
-
-    // 清理资源
     if(player->mixer) {
         snd_mixer_close(player->mixer);
         player->mixer = NULL;
@@ -521,10 +583,19 @@ int player_stop(ff_player_t * player)
         swr_free(&player->swr_ctx);
         player->swr_ctx = NULL;
     }
+    if(player->sws_ctx) {
+        sws_freeContext(player->sws_ctx);
+        player->sws_ctx = NULL;
+    }
 
     if(player->audio_codec_ctx) {
         avcodec_free_context(&player->audio_codec_ctx);
         player->audio_codec_ctx = NULL;
+    }
+
+    if(player->video_codec_ctx) {
+        avcodec_free_context(&player->video_codec_ctx);
+        player->video_codec_ctx = NULL;
     }
 
     if(player->format_ctx) {
@@ -532,7 +603,16 @@ int player_stop(ff_player_t * player)
         player->format_ctx = NULL;
     }
 
-    pthread_mutex_unlock(&player->mutex);
+    if(player->video_dst_data[0] != NULL) {
+        av_free(player->video_dst_data[0]);
+        player->video_dst_data[0] = NULL;
+    }
+
+    if(player->video_src_data[0] != NULL) {
+        av_free(player->video_src_data[0]);
+        player->video_src_data[0] = NULL;
+    }
+
     return 0;
 }
 
@@ -548,8 +628,9 @@ int player_seek_pct(ff_player_t * player, double percent)
     if(target_pts < 0) target_pts = 0;
     if(target_pts > player->duration) target_pts = player->duration;
 
-    player->seek_pos = target_pts;
-    player->seek_request = 1;
+    player->seek_pos           = target_pts;
+    player->seek_request_audio = true;
+    player->seek_request_video = true;
     return 0;
 
 }
@@ -564,8 +645,9 @@ int player_seek_ms(ff_player_t * player, int64_t target_ms)
         printf("now=%lld, duration=%lld\n", now_pts, player->duration);
         if(!player || target_pts < 0 || target_pts > player->duration || player->state == PLAYER_STOPPED)
             return -1;
-        player->seek_pos = target_pts;
-        player->seek_request = 1;
+        player->seek_pos           = target_pts;
+        player->seek_request_audio = true;
+        player->seek_request_video = true;
         return 0;
     }
     return -1;
