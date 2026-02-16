@@ -11,6 +11,7 @@ extern "C" {
 #include <unistd.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <alsa/asoundlib.h>
 
 /*********************
  *      DEFINES
@@ -23,7 +24,11 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-void audio_enable(bool b);
+void audio_enable(void);
+void audio_disable(void);
+int audio_init(void);
+int audio_volume_set(int percent);
+int audio_volume_get(void);
 
 /**********************
  *      MACROS

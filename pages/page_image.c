@@ -60,7 +60,7 @@ lv_obj_t * page_image(char * src)
 
     slider_scale = lv_slider_create(screen);
     lv_obj_set_size(slider_scale, lv_pct(10), lv_pct(80));
-    lv_obj_align(slider_scale, LV_ALIGN_LEFT_MID, lv_pct(85), 0);
+    lv_obj_align(slider_scale, LV_ALIGN_LEFT_MID, lv_pct(90), 0);
     lv_slider_set_range(slider_scale, 0, 100);
     lv_slider_set_value(slider_scale, 0, LV_ANIM_OFF);
     lv_obj_add_event_cb(slider_scale, slider_scale_changed, LV_EVENT_VALUE_CHANGED, NULL);

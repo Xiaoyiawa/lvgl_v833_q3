@@ -25,7 +25,7 @@ lv_obj_t * page_audio(char * filename)
 
     setDontDeepSleep(true);
     cycle = false;
-    system("echo 1 > /dev/spk_crtl");
+    audio_enable();
 
     player = player_create(); // /mnt/app/factory/play_test.wav
     if(player_open(player, filename) == 0 && player_init_audio(player) == 0) {
@@ -34,7 +34,6 @@ lv_obj_t * page_audio(char * filename)
     } else
         player = NULL;
 
-    timer  = lv_timer_create(timer_tick, 250, NULL);
 
     lv_obj_t * btn_control = lv_btn_create(screen);
     lv_obj_set_size(btn_control, lv_pct(40), lv_pct(20));
@@ -55,7 +54,7 @@ lv_obj_t * page_audio(char * filename)
     lv_obj_set_size(slider_volume, lv_pct(80), lv_pct(10));
     lv_obj_align(slider_volume, LV_ALIGN_TOP_MID, 0, lv_pct(40));
     lv_slider_set_range(slider_volume, 0, 100);
-    lv_slider_set_value(slider_volume, player_get_volume(player), LV_ANIM_OFF);
+    lv_slider_set_value(slider_volume, audio_volume_get(), LV_ANIM_OFF);
     lv_obj_add_event_cb(slider_volume, slider_volume_changed, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_add_event_cb(slider_volume, slider_volume_released, LV_EVENT_RELEASED, NULL);
 
@@ -80,17 +79,9 @@ lv_obj_t * page_audio(char * filename)
     lv_obj_align(clock, LV_ALIGN_TOP_MID, 0, lv_pct(3));
     lv_obj_set_style_text_align(clock, LV_TEXT_ALIGN_CENTER, NULL);
 
-    return screen;
-}
+    timer  = lv_timer_create(timer_tick, 250, NULL);
 
-static void back_click(lv_event_t * e)
-{
-    if(timer) lv_timer_del(timer);
-    if(player) player_destroy(player);
-    player = NULL;
-    system("echo 0 > /dev/spk_crtl");
-    setDontDeepSleep(false);
-    page_back();
+    return screen;
 }
 
 static void cycle_click(lv_event_t * e)
@@ -107,14 +98,14 @@ static void control_click(lv_event_t * e)
     if(!player) return;
     player_state_t state = player_get_state(player);
     if(state == PLAYER_PAUSED) {
-        system("echo 1 > /dev/spk_crtl");
+        audio_enable();
         player_resume(player);
         lv_label_set_text(btn_control_label, LV_SYMBOL_PAUSE "");
     }
     if(state == PLAYER_PLAYING) {
         player_pause(player);
         lv_label_set_text(btn_control_label, LV_SYMBOL_PLAY "");
-        system("echo 0 > /dev/spk_crtl");
+        audio_disable();
     }
 }
 
@@ -137,16 +128,12 @@ static void slider_volume_changed(lv_event_t * e)
 {
     lv_obj_t * slider = lv_event_get_target(e);
     int value         = lv_slider_get_value(slider);
-    if(!player) return;
-    player_state_t state = player_get_state(player);
-    if(state == PLAYER_PLAYING || state == PLAYER_PAUSED) {
-        player_set_volume(player, value);
-    }
-}
-static void slider_volume_released(lv_event_t * e)
-{
     
+    audio_volume_set(value);
 }
+
+static void slider_volume_released(lv_event_t * e)
+{}
 
 static void timer_tick(lv_event_t * e){
     if(!player) return;
@@ -161,6 +148,16 @@ static void player_finished(ff_player_t p)
     }
     else {
         lv_label_set_text(btn_control_label, LV_SYMBOL_PLAY "");
-        system("echo 0 > /dev/spk_crtl");
+        audio_disable();
     }
+}
+
+static void back_click(lv_event_t * e)
+{
+    if(timer) lv_timer_del(timer);
+    if(player) player_destroy(player);
+    player = NULL;
+    audio_disable();
+    setDontDeepSleep(false);
+    page_back();
 }

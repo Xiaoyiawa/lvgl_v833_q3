@@ -628,10 +628,10 @@ static void show_dir(lv_obj_t * obj, char * path)
         return;
     }
 
-    lv_table_set_cell_value_fmt(explorer->file_list, index++, 0, LV_SYMBOL_DIRECTORY "  %s", ".");
+    //lv_table_set_cell_value_fmt(explorer->file_list, index++, 0, LV_SYMBOL_DIRECTORY "  %s", ".");
     lv_table_set_cell_value_fmt(explorer->file_list, index++, 0, LV_SYMBOL_DIRECTORY "  %s", "..");
     lv_table_set_cell_value(explorer->file_list, 0, 1, "0");
-    lv_table_set_cell_value(explorer->file_list, 1, 1, "0");
+    //lv_table_set_cell_value(explorer->file_list, 1, 1, "0");
 
     while(1) {
         res = lv_fs_dir_read(&dir, fn);
@@ -647,16 +647,14 @@ static void show_dir(lv_obj_t * obj, char * path)
         }
 
         // 识别并展示文件
-        if (is_end_with(fn, ".png", false)  ||\
-            is_end_with(fn , ".jpg", false) ||\
-            is_end_with(fn , ".bmp", false) ||\
-            is_end_with(fn , ".gif", false)) {
+        if(str_end_with(fn, ".png", false) || str_end_with(fn, ".jpg", false) ||
+           str_end_with(fn, ".jpeg", false) || str_end_with(fn, ".bmp", false) ||
+           str_end_with(fn, ".gif", false)) {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_IMAGE "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "1");
-        } else if(is_end_with(fn, ".mp3", false) ||
-                  is_end_with(fn, ".ogg", false) ||
-                  is_end_with(fn, ".m4a", false) ||
-                  is_end_with(fn, ".wav", false)) {
+        } else if(str_end_with(fn, ".mp3", false) || str_end_with(fn, ".wav", false) ||
+                  str_end_with(fn, ".ogg", false) || str_end_with(fn, ".m4a", false) ||
+                  str_end_with(fn, ".aac", false) || str_end_with(fn, ".pcm", false)) {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_AUDIO "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "2");
         } else if(is_end_with(fn, ".mp4", false)) {

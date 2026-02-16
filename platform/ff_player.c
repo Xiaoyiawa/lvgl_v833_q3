@@ -171,8 +171,6 @@ int player_init_audio(ff_player_t * player)
         goto cleanup;
     }
 
-    player_init_volume_control(player);
-
     // 获取持续时间
     AVStream * audio_stream = player->format_ctx->streams[player->audio_stream_index];
     player->time_base       = audio_stream->time_base;
@@ -567,12 +565,6 @@ int player_stop(ff_player_t * player)
         lv_img_cache_invalidate_src(lv_img_get_src(player->video_area));
     }
 
-    if(player->mixer) {
-        snd_mixer_close(player->mixer);
-        player->mixer = NULL;
-        player->elem  = NULL;
-    }
-
     if(player->pcm_handle) {
         snd_pcm_drain(player->pcm_handle);
         snd_pcm_close(player->pcm_handle);
@@ -695,88 +687,6 @@ void player_destroy(ff_player_t * player)
 
     pthread_mutex_destroy(&player->mutex);
     free(player);
-}
-
-int player_init_volume_control(ff_player_t * player)
-{
-    int ret;
-    const char * card       = "default";
-    const char * selem_name = "LINEOUT volume";
-
-    if((ret = snd_mixer_open(&player->mixer, 0)) < 0) {
-        goto cleanup;
-    }
-
-    if((ret = snd_mixer_attach(player->mixer, card)) < 0) {
-        fprintf(stderr, "无法附加mixer到卡: %s\n", snd_strerror(ret));
-        goto cleanup;
-    }
-
-    if((ret = snd_mixer_selem_register(player->mixer, NULL, NULL)) < 0) {
-        fprintf(stderr, "无法注册mixer: %s\n", snd_strerror(ret));
-        goto cleanup;
-    }
-
-    if((ret = snd_mixer_load(player->mixer)) < 0) {
-        fprintf(stderr, "无法加载mixer: %s\n", snd_strerror(ret));
-        goto cleanup;
-    }
-
-    // 查找音量控制元素
-    snd_mixer_selem_id_t * sid;
-    snd_mixer_selem_id_alloca(&sid);
-    snd_mixer_selem_id_set_index(sid, 0);
-    snd_mixer_selem_id_set_name(sid, selem_name);
-
-    player->elem = snd_mixer_find_selem(player->mixer, sid);
-    if(!player->elem) {
-        fprintf(stderr, "无法找到音量控制元素 '%s'\n", selem_name);
-        goto cleanup;
-    }
-
-
-    // 获取音量范围
-    snd_mixer_selem_get_playback_volume_range(player->elem, &player->volume_min, &player->volume_max);
-
-    // 获取实际音量并计算百分比
-    long actual_volume;
-    snd_mixer_selem_get_playback_volume(player->elem, 0, &actual_volume);
-    player->volume     = 100 * (actual_volume - player->volume_min) / (player->volume_max - player->volume_min);
-
-    printf("音量: %ld (%ld, %ld-%ld)\n", player->volume, actual_volume, player->volume_min, player->volume_max);
-    return 0;
-
-cleanup:
-    snd_mixer_close(player->mixer);
-    player->mixer = NULL;
-    return -1;
-}
-
-int player_set_volume(ff_player_t * player, int volume)
-{
-    if(!player || !player->elem) return -1;
-
-    if(volume < 0) volume = 0;
-    if(volume > 100) volume = 100;
-
-    player->volume = volume;
-
-    // 将百分比转换为实际音量值
-    long actual_volume = player->volume_min + (volume * (player->volume_max - player->volume_min)) / 100;
-
-    int ret = snd_mixer_selem_set_playback_volume_all(player->elem, actual_volume);
-    if(ret < 0) {
-        fprintf(stderr, "设置音量失败: %s\n", snd_strerror(ret));
-        return -1;
-    }
-
-    return 0;
-}
-
-int player_get_volume(ff_player_t * player)
-{
-    if(!player) return -1;
-    return player->volume;
 }
 
 void player_set_finish_callback(ff_player_t * player, void (*func_ptr)(ff_player_t))

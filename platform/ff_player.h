@@ -39,10 +39,6 @@ typedef struct
     snd_pcm_uframes_t frames;
     unsigned int sample_rate;
     int channels;
-    snd_mixer_t * mixer;
-    snd_mixer_elem_t * elem;
-    long volume_min, volume_max;
-    int volume; // 0-100
 
     // 显示相关
     uint8_t * video_src_data[4];
@@ -90,11 +86,6 @@ int64_t player_get_duration_ms(ff_player_t * player);
 double player_get_position_pct(ff_player_t * player);
 player_state_t player_get_state(ff_player_t * player);
 void player_destroy(ff_player_t * player);
-
-// 音量控制
-int player_set_volume(ff_player_t * player, int volume);
-int player_get_volume(ff_player_t * player);
-int player_init_volume_control(ff_player_t * player);
 
 // 状态变化回调
 void player_set_finish_callback(ff_player_t * player, void (*func_ptr)(ff_player_t));
