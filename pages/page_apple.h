@@ -8,7 +8,12 @@ extern "C" {
 /*********************
  *      INCLUDES
  *********************/
-#include "main.h"
+#include "../lvgl/lvgl.h"
+#include "lv_drv_conf.h"
+#include "../lv_lib_100ask/lv_lib_100ask.h"
+#include "page_manager.h"
+#include "platform/ff_player.h"
+#include "platform/audio_ctrl.h"
 
 /*********************
  *      DEFINES

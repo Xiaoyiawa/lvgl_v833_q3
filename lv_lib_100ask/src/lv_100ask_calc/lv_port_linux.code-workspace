@@ -27,8 +27,7 @@
 			"swscale.h": "c",
 			"page_ftp.h": "c",
 			"cjson_utils.h": "c",
-			"cjson.h": "c",
-			"lv_drv_conf.h": "c"
+			"cjson.h": "c"
 		}
 	}
 }
