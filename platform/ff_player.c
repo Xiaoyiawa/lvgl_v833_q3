@@ -680,13 +680,15 @@ void player_destroy(ff_player_t * player)
     }
 
     player->finish_callback_ptr = NULL;
+    player->user_data            = NULL;
 
     pthread_mutex_destroy(&player->mutex);
     free(player);
 }
 
-void player_set_finish_callback(ff_player_t * player, void (*func_ptr)(ff_player_t))
+void player_set_finish_callback(ff_player_t * player, void (*func_ptr)(void *), void * user_data)
 {
     if(!player) return;
     player->finish_callback_ptr = func_ptr;
+    player->user_data           = user_data;
 }

@@ -64,7 +64,8 @@ typedef struct
 
     char * filename;
 
-    void (*finish_callback_ptr)(ff_player_t);
+    void * user_data;
+    void (*finish_callback_ptr)(void *);
 } ff_player_t;
 
 // 函数声明
@@ -84,6 +85,6 @@ player_state_t player_get_state(ff_player_t * player);
 void player_destroy(ff_player_t * player);
 
 // 状态变化回调
-void player_set_finish_callback(ff_player_t * player, void (*func_ptr)(ff_player_t));
+void player_set_finish_callback(ff_player_t * player, void (*func_ptr)(void *), void * user_data);
 
 #endif

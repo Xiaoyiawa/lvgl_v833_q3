@@ -24,6 +24,15 @@ extern "C" {
 /**********************
  *      TYPEDEFS
  **********************/
+typedef struct
+{
+    BasePage base;   // 基类对象
+    lv_timer_t * timer_time;
+    lv_timer_t * timer_battery;
+    lv_obj_t * label_time;
+    lv_obj_t * label_battery;
+
+} MainPage;
 
 /**********************
  * GLOBAL PROTOTYPES

@@ -14,6 +14,11 @@ static void btn_ftp_click(lv_event_t * e);
 static void timer_time_tick(lv_event_t * e);
 static void timer_battery_tick(lv_event_t * e);
 
+BasePage * main_page_create()
+{
+    MainPage * page = base_page_create(page_main(), NULL, NULL);
+}
+
 lv_obj_t * page_main()
 {
     lv_obj_t * screen = lv_obj_create(lv_scr_act());
@@ -91,7 +96,7 @@ lv_obj_t * page_main()
 
 static void btn_demo_click(lv_event_t * e)      //static可以防止同名冲突
 {	
-    page_open(page_demo(), NULL);
+    page_open(demo_page_create());
 }
 
 static void btn_robot_click(lv_event_t * e)
@@ -101,22 +106,22 @@ static void btn_robot_click(lv_event_t * e)
 
 static void btn_file_manager_click(lv_event_t * e)
 {
-    page_open(page_file_manager(), NULL);
+    page_open_obj(page_file_manager());
 }
 
 static void btn_calculator_click(lv_event_t * e)
 {
-    page_open(page_calculator(), NULL);
+    page_open(calc_page_create());
 }
 
 static void btn_bird_click(lv_event_t * e)
 {
-    page_open(page_bird(), NULL);
+    page_open_obj(page_bird());
 }
 
 static void btn_ftp_click(lv_event_t * e)
 {
-    page_open(page_ftp(), NULL);
+    page_open_obj(page_ftp());
 }
 
 static void timer_time_tick(lv_event_t * e)

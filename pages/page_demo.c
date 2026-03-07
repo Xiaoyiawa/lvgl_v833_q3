@@ -2,8 +2,20 @@
 
 static void slider1_changed(lv_event_t * e);
 static void btn_click(lv_event_t * e);
+static lv_obj_t * page_demo_obj();
 
-lv_obj_t * page_demo() {
+BasePage * demo_page_create()
+{
+	/*
+    DemoPage * page = malloc(sizeof(DemoPage));
+    if(!page) return NULL;
+    memset(page, 0, sizeof(DemoPage));
+    page->base.obj  = page_demo_obj();
+	*/
+    return base_page_create(page_demo_obj(), NULL, NULL);
+}
+
+static lv_obj_t * page_demo_obj() {
     lv_obj_t * screen = lv_obj_create(lv_scr_act());
     //lv_obj_remove_style_all(screen);
     lv_obj_set_size(screen, lv_pct(100), lv_pct(100));

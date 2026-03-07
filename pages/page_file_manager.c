@@ -44,18 +44,18 @@ static void explorer_event_handler(lv_event_t * e)
             str_end_with(file_name, ".jpeg", false) || str_end_with(file_name, ".bmp", false) ||
             str_end_with(file_name, ".gif", false)) 
             {
-                page_open(page_image(&file_name), NULL);
+                page_open_obj(page_image(&file_name));
             }
 
         if(str_end_with(file_name, ".mp3", false) || str_end_with(file_name, ".wav", false) ||
             str_end_with(file_name, ".ogg", false) || str_end_with(file_name, ".m4a", false) ||
             str_end_with(file_name, ".aac", false) || str_end_with(file_name, ".pcm", false))
             {
-                page_open(page_audio(&file_name), NULL);
+                page_open(audio_page_create(&file_name));
             }
             
         if(str_end_with(file_name, ".mp4", false)) {
-            page_open(page_apple(&file_name), NULL);
+            page_open_obj(page_apple(&file_name));
         }
             
     }
