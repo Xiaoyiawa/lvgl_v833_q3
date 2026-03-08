@@ -13,10 +13,11 @@ static void btn_bird_click(lv_event_t * e);
 static void btn_ftp_click(lv_event_t * e);
 static void timer_time_tick(lv_event_t * e);
 static void timer_battery_tick(lv_event_t * e);
+static void btn_eggsai_click(lv_event_t * e);
 
 BasePage * main_page_create()
 {
-    MainPage * page = base_page_create(page_main(), NULL, NULL);
+    return (BasePage*)base_page_create(page_main(), NULL, NULL);
 }
 
 lv_obj_t * page_main()
@@ -91,12 +92,25 @@ lv_obj_t * page_main()
     lv_obj_center(btn_label_demo);
     lv_obj_add_event_cb(btn_demo, btn_demo_click, LV_EVENT_CLICKED, NULL);
 
+    lv_obj_t * btn_eggsai = lv_btn_create(screen);
+    lv_obj_set_size(btn_eggsai, lv_pct(60), lv_pct(25));
+    lv_obj_align(btn_eggsai, LV_FLEX_ALIGN_CENTER, 0, 0);
+    lv_obj_t * btn_label_eggsai = lv_label_create(btn_eggsai);
+    lv_label_set_text(btn_label_eggsai, "Egg AI");
+    lv_obj_center(btn_label_eggsai);
+    lv_obj_add_event_cb(btn_eggsai, btn_eggsai_click, LV_EVENT_CLICKED, NULL);
+
     return screen;
 }
 
 static void btn_demo_click(lv_event_t * e)      //static可以防止同名冲突
 {	
     page_open(demo_page_create());
+}
+
+static void btn_eggsai_click(lv_event_t * e)
+{
+    page_open(eggsai_page_create());
 }
 
 static void btn_robot_click(lv_event_t * e)
