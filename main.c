@@ -286,6 +286,8 @@ int main(int argc, char * argv[])
 
     lv_ffmpeg_init();
 
+    audio_init();
+
     lv_obj_t * screen = lv_obj_create(NULL);
     lv_scr_load(screen);
 

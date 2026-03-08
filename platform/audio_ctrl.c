@@ -92,6 +92,7 @@ int audio_volume_set(int percent)
 
 int audio_volume_get(void)
 {
+    if(!elem) audio_init();
     return volume;
 }
 

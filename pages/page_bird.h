@@ -27,7 +27,7 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-lv_obj_t * page_bird();
+BasePage * page_bird_create();
 
 /**********************
  *      MACROS

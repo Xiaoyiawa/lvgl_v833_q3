@@ -111,12 +111,12 @@ static void btn_file_manager_click(lv_event_t * e)
 
 static void btn_calculator_click(lv_event_t * e)
 {
-    page_open(calc_page_create());
+    page_open_obj(page_calc());
 }
 
 static void btn_bird_click(lv_event_t * e)
 {
-    page_open_obj(page_bird());
+    page_open(page_bird_create());
 }
 
 static void btn_ftp_click(lv_event_t * e)

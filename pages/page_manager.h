@@ -55,8 +55,7 @@ BasePage * base_page_create(lv_obj_t * obj, void (*on_create)(void *), void (*on
 void page_manager_init(void);
 
 /**
- * 旧版本，用于兼容旧版本的页面
- * 也可以用于极简页面
+ * 用于不需要回调的页面，直接传入一个obj即可
  */
 void page_open_obj(lv_obj_t * obj);
 
