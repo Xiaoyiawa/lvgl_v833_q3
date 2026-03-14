@@ -833,3 +833,4 @@ static bool is_upper_letter(char c)
 }
 
 #endif  /*LV_USE_100ASK_FILE_EXPLORER*/
+
