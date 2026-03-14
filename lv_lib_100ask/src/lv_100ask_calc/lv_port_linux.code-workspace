@@ -28,7 +28,9 @@
 			"page_ftp.h": "c",
 			"cjson_utils.h": "c",
 			"cjson.h": "c",
-			"page_manager.h": "c"
+			"page_manager.h": "c",
+			"wildmidi_lib.h": "c",
+			"timidity.h": "c"
 		}
 	}
 }

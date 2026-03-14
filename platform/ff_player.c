@@ -52,13 +52,13 @@ int player_open(ff_player_t * player, const char * filename)
 
     // 打开音频文件
     if(avformat_open_input(&player->format_ctx, player->filename, NULL, NULL) < 0) {
-        fprintf(stderr, "无法打开文件\n");
+        fprintf(stderr, "[ff_player]无法打开文件\n");
         ret = -1;
         goto cleanup;
     }
 
     if(avformat_find_stream_info(player->format_ctx, NULL) < 0) {
-        fprintf(stderr, "无法获取流信息\n");
+        fprintf(stderr, "[ff_player]无法获取流信息\n");
         ret = -1;
         goto cleanup;
     }
@@ -89,7 +89,7 @@ int player_init_audio(ff_player_t * player)
     }
 
     if(player->audio_stream_index == -1) {
-        fprintf(stderr, "未找到音频流\n");
+        fprintf(stderr, "[ff_player]未找到音频流\n");
         ret = -1;
         goto cleanup;
     }
@@ -98,26 +98,26 @@ int player_init_audio(ff_player_t * player)
     AVCodecParameters * codecpar = player->format_ctx->streams[player->audio_stream_index]->codecpar;
     const AVCodec * codec        = avcodec_find_decoder(codecpar->codec_id);
     if(!codec) {
-        fprintf(stderr, "未找到对应的解码器\n");
+        fprintf(stderr, "[ff_player]未找到对应的解码器\n");
         ret = -1;
         goto cleanup;
     }
 
     player->audio_codec_ctx = avcodec_alloc_context3(codec);
     if(!player->audio_codec_ctx) {
-        fprintf(stderr, "无法分配解码器上下文\n");
+        fprintf(stderr, "[ff_player]无法分配解码器上下文\n");
         ret = -1;
         goto cleanup;
     }
 
     if(avcodec_parameters_to_context(player->audio_codec_ctx, codecpar) < 0) {
-        fprintf(stderr, "无法复制编解码器参数到解码器上下文\n");
+        fprintf(stderr, "[ff_player]无法复制编解码器参数到解码器上下文\n");
         ret = -1;
         goto cleanup;
     }
 
     if(avcodec_open2(player->audio_codec_ctx, codec, NULL) < 0) {
-        fprintf(stderr, "无法打开解码器\n");
+        fprintf(stderr, "[ff_player]无法打开解码器\n");
         ret = -1;
         goto cleanup;
     }
@@ -125,7 +125,7 @@ int player_init_audio(ff_player_t * player)
     // 设置重采样
     player->swr_ctx = swr_alloc();
     if(!player->swr_ctx) {
-        fprintf(stderr, "无法分配重采样上下文\n");
+        fprintf(stderr, "[ff_player]无法分配重采样上下文\n");
         ret = -1;
         goto cleanup;
     }
@@ -139,7 +139,7 @@ int player_init_audio(ff_player_t * player)
     av_opt_set_sample_fmt(player->swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
 
     if(swr_init(player->swr_ctx) < 0) {
-        fprintf(stderr, "无法初始化重采样器\n");
+        fprintf(stderr, "[ff_player]无法初始化重采样器\n");
         ret = -1;
         goto cleanup;
     }
@@ -150,7 +150,7 @@ int player_init_audio(ff_player_t * player)
     // 打开ALSA设备
     int err;
     if((err = snd_pcm_open(&player->pcm_handle, "default", SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-        fprintf(stderr, "无法打开PCM设备: %s\n", snd_strerror(err));
+        fprintf(stderr, "[ff_player]无法打开PCM设备: %s\n", snd_strerror(err));
         ret = -1;
         goto cleanup;
     }
@@ -169,7 +169,7 @@ int player_init_audio(ff_player_t * player)
     snd_pcm_hw_params_set_period_size_near(player->pcm_handle, hw_params, &player->frames, 0);
 
     if((err = snd_pcm_hw_params(player->pcm_handle, hw_params)) < 0) {
-        fprintf(stderr, "无法设置硬件参数: %s\n", snd_strerror(err));
+        fprintf(stderr, "[ff_player]无法设置硬件参数: %s\n", snd_strerror(err));
         ret = -1;
         goto cleanup;
     }
@@ -182,7 +182,7 @@ int player_init_audio(ff_player_t * player)
     // 创建播放线程
     player->state = PLAYER_PAUSED;
     if(pthread_create(&player->player_thread, NULL, player_thread_func, player) != 0) {
-        fprintf(stderr, "无法创建播放线程\n");
+        fprintf(stderr, "[ff_player]无法创建播放线程\n");
         ret = -1;
         goto cleanup;
     }
@@ -215,7 +215,7 @@ int player_init_video(ff_player_t * player, lv_obj_t * lv_obj)
     }
 
     if(player->video_stream_index == -1) {
-        fprintf(stderr, "未找到视频流\n");
+        fprintf(stderr, "[ff_player]未找到视频流\n");
         ret = -2;
         goto cleanup;
     }
@@ -224,26 +224,26 @@ int player_init_video(ff_player_t * player, lv_obj_t * lv_obj)
     AVCodecParameters * codecpar = player->format_ctx->streams[player->video_stream_index]->codecpar;
     const AVCodec * codec        = avcodec_find_decoder(codecpar->codec_id);
     if(!codec) {
-        fprintf(stderr, "未找到对应的解码器\n");
+        fprintf(stderr, "[ff_player]未找到对应的解码器\n");
         ret = -3;
         goto cleanup;
     }
 
     player->video_codec_ctx = avcodec_alloc_context3(codec);
     if(!player->video_codec_ctx) {
-        fprintf(stderr, "无法分配解码器上下文\n");
+        fprintf(stderr, "[ff_player]无法分配解码器上下文\n");
         ret = -4;
         goto cleanup;
     }
 
     if(avcodec_parameters_to_context(player->video_codec_ctx, codecpar) < 0) {
-        fprintf(stderr, "无法复制编解码器参数到解码器上下文\n");
+        fprintf(stderr, "[ff_player]无法复制编解码器参数到解码器上下文\n");
         ret = -5;
         goto cleanup;
     }
 
     if(avcodec_open2(player->video_codec_ctx, codec, NULL) < 0) {
-        fprintf(stderr, "无法打开解码器\n");
+        fprintf(stderr, "[ff_player]无法打开解码器\n");
         ret = -6;
         goto cleanup;
     }
@@ -288,7 +288,7 @@ int player_init_video(ff_player_t * player, lv_obj_t * lv_obj)
                        player->video_codec_ctx->pix_fmt, lv_obj_get_width(player->video_area),
                        lv_obj_get_height(player->video_area), player->video_dst_pix_fmt, swsFlags, NULL, NULL, NULL);
     if(!player->sws_ctx) {
-        fprintf(stderr, "无法创建图像转换上下文\n");
+        fprintf(stderr, "[ff_player]无法创建图像转换上下文\n");
         ret = -9;
         goto cleanup;
     }
@@ -388,13 +388,13 @@ static void * player_thread_func(void * arg)
     AVPacket * packet = av_packet_alloc();
     AVFrame * frame   = av_frame_alloc();
     if(!packet || !frame) {
-        fprintf(stderr, "无法分配数据包或帧\n");
+        fprintf(stderr, "[ff_player]无法分配数据包或帧\n");
         goto cleanup;
     }
 
     uint8_t * audio_buffer = malloc(BUFFER_SIZE * player->channels * 2); // S16LE
     if(!audio_buffer) {
-        fprintf(stderr, "无法分配音频缓冲区\n");
+        fprintf(stderr, "[ff_player]无法分配音频缓冲区\n");
         goto cleanup;
     }
 
@@ -404,7 +404,7 @@ static void * player_thread_func(void * arg)
         if(player->seek_request) {
             int64_t seek_target = player->seek_pos;
             if(av_seek_frame(player->format_ctx, player->audio_stream_index, seek_target, AVSEEK_FLAG_BACKWARD) < 0) {
-                fprintf(stderr, "跳转失败\n");
+                fprintf(stderr, "[ff_player]跳转失败\n");
             } else {
                 avcodec_flush_buffers(player->audio_codec_ctx);
                 if(player->video_codec_ctx) avcodec_flush_buffers(player->video_codec_ctx);
@@ -423,6 +423,7 @@ static void * player_thread_func(void * arg)
         if(ret < 0) {
             player->state = PLAYER_PAUSED;
             if(player->finish_callback_ptr) {
+                snd_pcm_wait(player->pcm_handle, 128);
                 (*player->finish_callback_ptr)(player);
             }
             continue;
@@ -440,7 +441,7 @@ static void * player_thread_func(void * arg)
                 if(ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
                     break;
                 } else if(ret < 0) {
-                    fprintf(stderr, "解码错误\n");
+                    fprintf(stderr, "[ff_player]解码错误\n");
                     break;
                 }
 
@@ -460,7 +461,7 @@ static void * player_thread_func(void * arg)
                     if(frames_written < 0) {
                         frames_written = snd_pcm_recover(player->pcm_handle, frames_written, 0);
                         if(frames_written < 0) {
-                            fprintf(stderr, "写入PCM设备错误: %s\n", snd_strerror(frames_written));
+                            fprintf(stderr, "[ff_player]写入PCM设备错误: %s\n", snd_strerror(frames_written));
                         }
                     }
                 }
@@ -483,7 +484,7 @@ static void * player_thread_func(void * arg)
                 if(ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                     break;
                 else if(ret < 0) {
-                    fprintf(stderr, "视频解码错误\n");
+                    fprintf(stderr, "[ff_player]视频解码错误\n");
                     break;
                 }
 
@@ -612,7 +613,7 @@ int player_seek_pct(ff_player_t * player, double percent)
     int64_t target_pts = (int64_t)(player->duration * percent / 100.0);
     int64_t now_pts    = player->current_pts;
 
-    LV_LOG_USER("[player]now=%lld, duration=%lld\n", now_pts, player->duration);
+    LV_LOG_USER("[ff_player]now=%lld, duration=%lld\n", now_pts, player->duration);
 
     if(!player || player->state == PLAYER_STOPPED) return -1;
     if(target_pts < 0) target_pts = 0;
@@ -631,7 +632,7 @@ int player_seek_ms(ff_player_t * player, int64_t target_ms)
         int64_t target_pts = target_ms * (AV_TIME_BASE / 1000);
         int64_t now_pts    = player->current_pts;
 
-        LV_LOG_USER("[player]now=%lld, duration=%lld\n", now_pts, player->duration);
+        LV_LOG_USER("[ff_player]now=%lld, duration=%lld\n", now_pts, player->duration);
         if(!player || target_pts < 0 || target_pts > player->duration || player->state == PLAYER_STOPPED)
             return -1;
         player->seek_pos     = target_pts;

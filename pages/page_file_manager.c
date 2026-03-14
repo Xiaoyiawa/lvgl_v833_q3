@@ -57,8 +57,11 @@ static void explorer_event_handler(lv_event_t * e)
         if(str_end_with(file_name, ".mp4", false)) {
             page_open(page_video_create(&file_name));
         }
-            
-    }
+
+        if(str_end_with(file_name, ".mid", false) || str_end_with(file_name, ".midi", false)) {
+            page_open(page_midi_create(&file_name));
+        }
+        }
 }
 
 static void back_click(lv_event_t * e)
