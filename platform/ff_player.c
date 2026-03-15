@@ -398,7 +398,12 @@ static void * player_thread_func(void * arg)
         goto cleanup;
     }
 
-    while(player->state != PLAYER_STOPPED) {
+    while(1) {
+        pthread_mutex_lock(&player->mutex);
+        if(player->state == PLAYER_STOPPED) {
+            pthread_mutex_unlock(&player->mutex);
+            break;
+        }
 
         // 检查跳转请求
         if(player->seek_request) {
@@ -414,6 +419,7 @@ static void * player_thread_func(void * arg)
         }
         // 检查暂停状态
         if(player->state == PLAYER_PAUSED) {
+            pthread_mutex_unlock(&player->mutex);
             usleep(100000); // 100ms
             continue;
         }
@@ -422,12 +428,16 @@ static void * player_thread_func(void * arg)
         // 文件结束或错误
         if(ret < 0) {
             player->state = PLAYER_PAUSED;
+            player->seek_pos = 0;
+            player->seek_request = true;
+            pthread_mutex_unlock(&player->mutex);
+            snd_pcm_wait(player->pcm_handle, 128);
             if(player->finish_callback_ptr) {
-                snd_pcm_wait(player->pcm_handle, 128);
                 (*player->finish_callback_ptr)(player);
             }
             continue;
         }
+        pthread_mutex_unlock(&player->mutex);
 
         if(packet->stream_index == player->audio_stream_index) {
             ret = avcodec_send_packet(player->audio_codec_ctx, packet);
@@ -446,7 +456,9 @@ static void * player_thread_func(void * arg)
                 }
 
                 // 更新当前播放位置
+                pthread_mutex_lock(&player->mutex);
                 player->current_pts = frame->pts;
+                pthread_mutex_unlock(&player->mutex);
 
                 // 重采样
                 uint8_t * out_data[1] = {audio_buffer};
@@ -523,11 +535,15 @@ int player_pause(ff_player_t * player)
 {
     if(!player) return -1;
 
+    pthread_mutex_lock(&player->mutex);
     if(player->state == PLAYER_PLAYING) {
         player->state = PLAYER_PAUSED;
+        pthread_mutex_unlock(&player->mutex);
+
         snd_pcm_pause(player->pcm_handle, 1);
         return 0;
     }
+    pthread_mutex_unlock(&player->mutex);
     return -1;
 }
 
@@ -535,11 +551,15 @@ int player_resume(ff_player_t * player)
 {
     if(!player) return -1;
 
+    pthread_mutex_lock(&player->mutex);
     if(player->state == PLAYER_PAUSED) {
         player->state = PLAYER_PLAYING;
+        pthread_mutex_unlock(&player->mutex);
+
         snd_pcm_pause(player->pcm_handle, 0);
         return 0;
     }
+    pthread_mutex_unlock(&player->mutex);
     return -1;
 }
 
@@ -610,6 +630,9 @@ int player_stop(ff_player_t * player)
 //根据百分比跳转
 int player_seek_pct(ff_player_t * player, double percent)
 {
+    if(!player) return -1;
+
+    pthread_mutex_lock(&player->mutex);
     int64_t target_pts = (int64_t)(player->duration * percent / 100.0);
     int64_t now_pts    = player->current_pts;
 
@@ -621,13 +644,17 @@ int player_seek_pct(ff_player_t * player, double percent)
 
     player->seek_pos     = target_pts;
     player->seek_request = true;
-    return 0;
 
+    pthread_mutex_unlock(&player->mutex);
+    return 0;
 }
 
 //根据毫秒数跳转
 int player_seek_ms(ff_player_t * player, int64_t target_ms)
 {
+    if(!player) return -1;
+
+    pthread_mutex_lock(&player->mutex);
     if(player->state != PLAYER_STOPPED) {
         int64_t target_pts = target_ms * (AV_TIME_BASE / 1000);
         int64_t now_pts    = player->current_pts;
@@ -637,8 +664,11 @@ int player_seek_ms(ff_player_t * player, int64_t target_ms)
             return -1;
         player->seek_pos     = target_pts;
         player->seek_request = true;
+
+        pthread_mutex_unlock(&player->mutex);
         return 0;
     }
+    pthread_mutex_unlock(&player->mutex);
     return -1;
 }
 
@@ -646,7 +676,9 @@ int64_t player_get_position_ms(ff_player_t * player)
 {
     if(!player || player->duration <= 0) return 0;
 
+    pthread_mutex_lock(&player->mutex);
     int64_t current = player->current_pts;
+    pthread_mutex_unlock(&player->mutex);
     return current / (AV_TIME_BASE / 1000);
 }
 
@@ -659,14 +691,21 @@ int64_t player_get_duration_ms(ff_player_t * player)
 double player_get_position_pct(ff_player_t * player)
 {
     if(!player || player->duration <= 0) return 0.0;
+
+    pthread_mutex_lock(&player->mutex);
     int64_t current = player->current_pts;
+    pthread_mutex_unlock(&player->mutex);
     return (double)current / player->duration * 100.0;
 }
 
 player_state_t player_get_state(ff_player_t * player)
 {
     if(!player) return PLAYER_STOPPED;
-    return player->state;
+
+    pthread_mutex_lock(&player->mutex);
+    player_state_t ret = player->state;
+    pthread_mutex_unlock(&player->mutex);
+    return ret;
 }
 
 void player_destroy(ff_player_t * player)

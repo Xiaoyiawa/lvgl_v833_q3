@@ -161,7 +161,10 @@ static void * midi_thread_func(void * arg)
 
     while(1) {
         pthread_mutex_lock(&player->mutex);
-        if(player->state == MIDI_STOPPED) break;
+        if(player->state == MIDI_STOPPED) {
+            pthread_mutex_unlock(&player->mutex);
+            break;
+        }
 
         // 检查跳转请求
         if(player->seek_request) {
