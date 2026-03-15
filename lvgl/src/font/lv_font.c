@@ -48,7 +48,8 @@
  */
 const uint8_t * lv_font_get_glyph_bitmap(const lv_font_t * font_p, uint32_t letter)
 {
-    LV_ASSERT_NULL(font_p);
+    if(!font_p) return NULL;
+    //LV_ASSERT_NULL(font_p);
     return font_p->get_glyph_bitmap(font_p, letter);
 }
 

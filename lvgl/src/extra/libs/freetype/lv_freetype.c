@@ -339,7 +339,7 @@ static const uint8_t * get_glyph_bitmap_cb_cache(const lv_font_t * font, uint32_
         if(current_face && current_face->glyph->format == FT_GLYPH_FORMAT_BITMAP) {
             return (const uint8_t *)(current_face->glyph->bitmap.buffer);
         }
-        return NULL;
+        return get_glyph_bitmap_cb_cache(font, '?');
     }
 
 #if LV_FREETYPE_SBIT_CACHE
