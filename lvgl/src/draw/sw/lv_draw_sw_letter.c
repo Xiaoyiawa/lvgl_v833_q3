@@ -108,6 +108,13 @@ void lv_draw_sw_letter(lv_draw_ctx_t * draw_ctx, const lv_draw_label_dsc_t * dsc
         return;
     }
 
+    /*Added: If resolved_font is null, use a '※' character as placeholder.
+     *If even this character is undefined, just return. LVGL will leave it as a space.*/
+    if(!g.resolved_font) {
+        if(letter != 0x203b) lv_draw_sw_letter(draw_ctx, dsc, pos_p, 0x203b);
+        return;
+    }
+
     /*Don't draw anything if the character is empty. E.g. space*/
     if((g.box_h == 0) || (g.box_w == 0)) return;
 

@@ -51,7 +51,7 @@ static lv_obj_t * page_demo_obj() {
 	lv_obj_center(btn_label);
 	lv_obj_add_event_cb(btn, btn_click, LV_EVENT_CLICKED, NULL);
 
-	return screen;
+    return screen;
 }
 
 static void slider1_changed(lv_event_t * e) {

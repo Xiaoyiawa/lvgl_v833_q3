@@ -39,11 +39,10 @@ static void explorer_event_handler(lv_event_t * e)
         printf("%s\n", file_name);
 
         if(str_end_with(file_name, ".png", false) || str_end_with(file_name, ".jpg", false) ||
-            str_end_with(file_name, ".jpeg", false) || str_end_with(file_name, ".bmp", false) ||
-            str_end_with(file_name, ".gif", false)) 
-            {
-                page_open(page_image_create(&file_name));
-            }
+           str_end_with(file_name, ".jpeg", false) || str_end_with(file_name, ".bmp", false) ||
+           str_end_with(file_name, ".gif", false)) {
+            page_open(page_image_create(&file_name));
+        }
 
         if(str_end_with(file_name, ".mp3", false) || str_end_with(file_name, ".wav", false) ||
            str_end_with(file_name, ".ogg", false) || str_end_with(file_name, ".m4a", false) ||
@@ -53,6 +52,10 @@ static void explorer_event_handler(lv_event_t * e)
 
         if(str_end_with(file_name, ".mp4", false)) {
             page_open(page_video_create(file_name));
+        }
+
+        if(str_end_with(file_name, ".mid", false) || str_end_with(file_name, ".midi", false)) {
+            page_open(page_midi_create(&file_name));
         }
 
         if(str_end_with(file_name, ".txt", false) || str_end_with(file_name, ".json", false) ||

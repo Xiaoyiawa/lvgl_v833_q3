@@ -464,6 +464,11 @@ void readKeyHome(void)
                 homeClickTs = -1;
             } else {
                 homeClickTs = ts;
+                if(sleepTs == -1) {
+                    page_back();
+                } else {
+                    sysWake();
+                }
             }
         } else {
             printf("[key]home_down\n");
@@ -494,16 +499,20 @@ void sysSleep(void)
 
 void sysDeepSleep(void)
 {
+    char buffer[16] = {0};
+    while(read(powerd, buffer, 0x10u) > 0); // 清空电源键的缓冲区
+    while(read(homed, buffer, 0x10u) > 0);  // 清空HOME键的缓冲区
+
     deepSleep = true;
     // 睡死过去，相当省电
+    system("echo \"0\" >/sys/class/rtc/rtc0/wakealarm");
     system("echo \"0\" >/sys/class/rtc/rtc0/wakealarm");
     system("echo \"mem\" > /sys/power/state");
 
     // 按电源键会醒过来，继续执行下面的代码
 
-    sysWake(); // 那睡觉的起来了嗷（改到这里是为了防止其他醒来的情况，比如插拔usb）
-    char buffer[16] = {0};
-    while(read(powerd, buffer, 0x10u) > 0); // 清空电源键的缓冲区，因为开机按的电源键也算数
+    sysWake();                              // 那睡觉的起来了嗷（改到这里是为了防止其他醒来的情况，比如插拔usb）
+    while(read(powerd, buffer, 0x10u) > 0); // 再次清空电源键的缓冲区，因为开机按的电源键也算数
 }
 
 void setDontDeepSleep(bool b)

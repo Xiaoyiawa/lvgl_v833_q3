@@ -73,7 +73,7 @@ void page_open(BasePage * new_page)
 // 返回上一页并销毁当前页
 void page_back(void)
 {
-    if(page_manager.top < 0) return;
+    if(page_manager.top <= 0) return;
 
     // 获取、隐藏当前页面
     BasePage * current_page = page_manager.stack[page_manager.top];
