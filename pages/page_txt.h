@@ -6,32 +6,17 @@
 extern "C" {
 #endif
 
-/*********************
- *      INCLUDES
- *********************/
 #include "../lvgl/lvgl.h"
-#include "../lv_lib_100ask/lv_lib_100ask.h"
 #include "page_manager.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "lvgl/src/misc/lv_txt.h"
 
-/*********************
- *      DEFINES
- *********************/
-
-/**********************
- *      TYPEDEFS
- **********************/
-
-/**********************
- * GLOBAL PROTOTYPES
- **********************/
-BasePage * page_txt(char * filename);
-
-/**********************
- *      MACROS
- **********************/
+BasePage * page_txt_create(char * filename);
 
 #ifdef __cplusplus
-} /* extern "C" */
+}
 #endif
 
 #endif

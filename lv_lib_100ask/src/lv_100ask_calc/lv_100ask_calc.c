@@ -28,43 +28,36 @@
 static void lv_100ask_calc_constructor(const lv_obj_class_t * class_p, lv_obj_t * obj);
 static void lv_100ask_calc_destructor(const lv_obj_class_t * class_p, lv_obj_t * obj);
 
-static void calc_btnm_changed_event_cb(lv_event_t *e);
-static void lv_100ask_calc_tokenizer_init(lv_obj_t *obj, char *expr);
-static lv_100ask_calc_token_t lv_100ask_calc_get_next_token(lv_obj_t *obj);
-static lv_100ask_calc_token_t lv_100ask_calc_siglechar(char *curr_char);
-static double lv_100ask_calc_expr(lv_obj_t *obj);
-static double lv_100ask_calc_term(lv_obj_t *obj);
-static double lv_100ask_calc_factor(lv_obj_t *obj);
-static double lv_100ask_calc_tokenizer_num(char *curr_char);
-static void lv_100ask_calc_accept(lv_obj_t *obj, lv_100ask_calc_token_t token);
-static void lv_100ask_calc_error(lv_100ask_calc_error_t error_code ,lv_100ask_calc_error_t err);
-static void lv_100ask_calc_tokenizer_next(lv_obj_t *obj);
-static bool lv_100ask_calc_tokenizer_finished(lv_100ask_calc_token_t current_token, char *curr_char);
+static void calc_btnm_changed_event_cb(lv_event_t * e);
+static void lv_100ask_calc_tokenizer_init(lv_obj_t * obj, char * expr);
+static lv_100ask_calc_token_t lv_100ask_calc_get_next_token(lv_obj_t * obj);
+static lv_100ask_calc_token_t lv_100ask_calc_siglechar(char * curr_char);
+static double lv_100ask_calc_expr(lv_obj_t * obj);
+static double lv_100ask_calc_term(lv_obj_t * obj);
+static double lv_100ask_calc_factor(lv_obj_t * obj);
+static double lv_100ask_calc_tokenizer_num(char * curr_char);
+static void lv_100ask_calc_accept(lv_obj_t * obj, lv_100ask_calc_token_t token);
+static void lv_100ask_calc_error(lv_100ask_calc_error_t error_code, lv_100ask_calc_error_t err);
+static void lv_100ask_calc_tokenizer_next(lv_obj_t * obj);
+static bool lv_100ask_calc_tokenizer_finished(lv_100ask_calc_token_t current_token, char * curr_char);
 
 /**********************
  *  STATIC VARIABLES
  **********************/
-const lv_obj_class_t lv_100ask_calc_class = {
-    .constructor_cb = lv_100ask_calc_constructor,
-    .destructor_cb  = lv_100ask_calc_destructor,
-    .width_def      = LV_DPI_DEF * 2,
-    .height_def     = LV_DPI_DEF * 3,
-    .instance_size  = sizeof(lv_100ask_calc_t),
-    .base_class     = &lv_obj_class
-};
+const lv_obj_class_t lv_100ask_calc_class = {.constructor_cb = lv_100ask_calc_constructor,
+                                             .destructor_cb  = lv_100ask_calc_destructor,
+                                             .width_def      = LV_DPI_DEF * 2,
+                                             .height_def     = LV_DPI_DEF * 3,
+                                             .instance_size  = sizeof(lv_100ask_calc_t),
+                                             .base_class     = &lv_obj_class};
 
 // Key layout
-static const char * btnm_map[] = {  "(", ")", "C", "<-", "\n",
-									"7", "8", "9", "/",  "\n",
-									"4", "5", "6", "*",  "\n",
-									"1", "2", "3", "-",  "\n",
-									"0", ".", "=", "+",  ""};
+static const char * btnm_map[] = {"(", ")",  "C", "<-", "\n", "7", "8",  "9", "/", "\n", "4", "5", "6",
+                                  "*", "\n", "1", "2",  "3",  "-", "\n", "0", ".", "=",  "+", ""};
 
 // error list
-static const lv_100ask_calc_error_table_t error_table[] = {
-    {.error_code = no_error,            .message = "no error"},
-    {.error_code = syntax_error,        .message = "syntax error!"}
-};
+static const lv_100ask_calc_error_table_t error_table[] = {{.error_code = no_error, .message = "no error"},
+                                                           {.error_code = syntax_error, .message = "syntax error!"}};
 
 /**********************
  *      MACROS
@@ -86,7 +79,6 @@ lv_obj_t * lv_100ask_calc_create(lv_obj_t * parent)
  * Setter functions
  *====================*/
 
-
 /*=====================
  * Getter functions
  *====================*/
@@ -99,7 +91,6 @@ lv_obj_t * lv_100ask_calc_get_btnm(lv_obj_t * obj)
     return calc->btnm;
 }
 
-
 lv_obj_t * lv_100ask_calc_get_ta_hist(lv_obj_t * obj)
 {
     LV_ASSERT_OBJ(obj, MY_CLASS);
@@ -107,7 +98,6 @@ lv_obj_t * lv_100ask_calc_get_ta_hist(lv_obj_t * obj)
 
     return calc->ta_hist;
 }
-
 
 lv_obj_t * lv_100ask_calc_get_ta_input(lv_obj_t * obj)
 {
@@ -132,11 +122,11 @@ static void lv_100ask_calc_constructor(const lv_obj_class_t * class_p, lv_obj_t 
 
     lv_100ask_calc_t * calc = (lv_100ask_calc_t *)obj;
 
-    calc->curr_char = NULL;
-    calc->next_char = NULL;
+    calc->curr_char     = NULL;
+    calc->next_char     = NULL;
     calc->current_token = TOKENIZER_ERROR;
-    calc->error_code = no_error;
-    calc->count = 0;
+    calc->error_code    = no_error;
+    calc->count         = 0;
 
     /*set layout*/
     lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_COLUMN);
@@ -152,7 +142,7 @@ static void lv_100ask_calc_constructor(const lv_obj_class_t * class_p, lv_obj_t 
     lv_textarea_set_max_length(calc->ta_hist, LV_100ASK_CALC_HISTORY_MAX_LINE);
     lv_textarea_set_align(calc->ta_hist, LV_TEXT_ALIGN_RIGHT);
     lv_textarea_set_text(calc->ta_hist, "");
-    lv_textarea_set_placeholder_text(calc->ta_hist, "CALC HISTORY\t\t");
+    lv_textarea_set_placeholder_text(calc->ta_hist, "CALC HISTORY  \t\t");
     lv_obj_set_style_border_width(calc->ta_hist, 0, 0);
 
     /*Input textarea*/
@@ -162,7 +152,7 @@ static void lv_100ask_calc_constructor(const lv_obj_class_t * class_p, lv_obj_t 
     lv_obj_set_style_text_color(calc->ta_input, LV_100ASK_COLOR_GREEN, 0);
     lv_obj_set_style_radius(calc->ta_input, 0, 0);
     lv_obj_set_style_border_width(calc->ta_input, 0, 0);
-    
+
     lv_textarea_set_one_line(calc->ta_input, true);
     lv_textarea_set_cursor_click_pos(calc->ta_input, false);
     lv_textarea_set_max_length(calc->ta_input, LV_100ASK_CALC_HISTORY_MAX_LINE);
@@ -186,28 +176,22 @@ static void lv_100ask_calc_constructor(const lv_obj_class_t * class_p, lv_obj_t 
 static void lv_100ask_calc_destructor(const lv_obj_class_t * class_p, lv_obj_t * obj)
 {
     LV_UNUSED(class_p);
-
 }
 
-
-
-
-static void calc_btnm_changed_event_cb(lv_event_t *e)
+static void calc_btnm_changed_event_cb(lv_event_t * e)
 {
-    lv_obj_t * obj = lv_event_get_target(e);
+    lv_obj_t * obj       = lv_event_get_target(e);
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * user_data = lv_event_get_user_data(e);
-    
-    uint32_t id = lv_btnmatrix_get_selected_btn(obj);
+
+    uint32_t id      = lv_btnmatrix_get_selected_btn(obj);
     const char * txt = lv_btnmatrix_get_btn_text(obj, id);
 
     lv_100ask_calc_t * calc = (lv_100ask_calc_t *)user_data;
 
-    if(code == LV_EVENT_VALUE_CHANGED)
-    {
+    if(code == LV_EVENT_VALUE_CHANGED) {
         // Perform operations
-        if (strcmp(txt, "=") == 0)
-        {
+        if(strcmp(txt, "=") == 0) {
             char tmp_buff[128];
             double calc_results;
 
@@ -215,24 +199,19 @@ static void calc_btnm_changed_event_cb(lv_event_t *e)
             lv_100ask_calc_tokenizer_init(user_data, calc->calc_exp);
 
             // Calculates the value of the first level priority expression
-            calc_results = lv_100ask_calc_expr(user_data);  
+            calc_results = lv_100ask_calc_expr(user_data);
 
-            if (calc->error_code != no_error)
-            {
+            if(calc->error_code != no_error) {
                 // Find the error code and display the corresponding message
-                for (int i = 0; i < sizeof(error_table); i++)
-                {
-                    if (error_table[i].error_code == calc->error_code)
-                    {
+                for(int i = 0; i < sizeof(error_table); i++) {
+                    if(error_table[i].error_code == calc->error_code) {
                         lv_textarea_add_text(calc->ta_hist, "\n");
                         lv_textarea_add_text(calc->ta_hist, error_table[i].message);
                         lv_textarea_add_text(calc->ta_hist, "\n");
                     }
                 }
                 calc->error_code = no_error;
-            }
-            else
-            {
+            } else {
                 sprintf(tmp_buff, "%s=%.8g\0", lv_textarea_get_text(calc->ta_input), calc_results);
                 lv_textarea_add_text(calc->ta_hist, "\n");
                 lv_textarea_add_text(calc->ta_hist, tmp_buff);
@@ -240,30 +219,28 @@ static void calc_btnm_changed_event_cb(lv_event_t *e)
                 // Empty expression
                 lv_memset_00(calc->calc_exp, sizeof(calc->calc_exp));
                 calc->count = 0;
-
             }
 
         }
         // clear
-        else if (strcmp(txt, "C") == 0)
-        {
+        else if(strcmp(txt, "C") == 0) {
             lv_textarea_set_text(calc->ta_input, "");
             // Empty expression
             lv_memset_00(calc->calc_exp, sizeof(calc->calc_exp));
             calc->count = 0;
         }
         // del char
-        else if (strcmp(txt, "<-") == 0)             
-        {
+        else if(strcmp(txt, "<-") == 0) {
             lv_textarea_del_char(calc->ta_input);
-            calc->calc_exp[calc->count-1] = '\0';
+            calc->calc_exp[calc->count - 1] = '\0';
 
-            if(calc->count > 0) calc->count--;
-            else lv_textarea_set_text(calc->ta_input, "");
+            if(calc->count > 0)
+                calc->count--;
+            else
+                lv_textarea_set_text(calc->ta_input, "");
         }
         // Add char
-        else
-        {
+        else {
             if(calc->count <= 0) lv_textarea_set_text(calc->ta_input, "");
 
             lv_textarea_add_text(calc->ta_input, txt);
@@ -273,53 +250,46 @@ static void calc_btnm_changed_event_cb(lv_event_t *e)
     }
 }
 
-
-
 /**
  * Lexical analyzer initialization.
  * @param obj       pointer to a calc object
  * @param expr      pointer to expression
  */
-static void lv_100ask_calc_tokenizer_init(lv_obj_t *obj, char *expr)
+static void lv_100ask_calc_tokenizer_init(lv_obj_t * obj, char * expr)
 {
     lv_100ask_calc_t * calc = (lv_100ask_calc_t *)obj;
 
     calc->curr_char = calc->next_char = expr;
-    calc->current_token = lv_100ask_calc_get_next_token(obj);
+    calc->current_token               = lv_100ask_calc_get_next_token(obj);
 
     return;
 }
-
-
 
 /**
  * Get a token.
  * @param obj       pointer to a calc object
  * @return          Token type
  */
-static lv_100ask_calc_token_t lv_100ask_calc_get_next_token(lv_obj_t *obj)
+static lv_100ask_calc_token_t lv_100ask_calc_get_next_token(lv_obj_t * obj)
 {
     int i;
     lv_100ask_calc_t * calc = (lv_100ask_calc_t *)obj;
 
     // End of expression
-    if (calc->curr_char == '\0')
-        return TOKENIZER_ENDOFINPUT;
+    if(calc->curr_char == '\0') return TOKENIZER_ENDOFINPUT;
 
-    if (isdigit(*calc->curr_char))
-    {
+    if(isdigit(*calc->curr_char)) {
         int dot_count = 0;
         // The length of the allowed number cannot be exceeded
-        for (i = 0; i <= LV_100ASK_CALC_MAX_NUM_LEN; i++)
-        {
+        for(i = 0; i <= LV_100ASK_CALC_MAX_NUM_LEN; i++) {
             if((*(calc->curr_char + i)) == '.') {
                 dot_count++;
             }
-                
+
             if(!isdigit(*(calc->curr_char + i)) && (*(calc->curr_char + i)) != '.') {
                 calc->next_char = calc->curr_char + i;
 
-                if(dot_count <= 1) 
+                if(dot_count <= 1)
                     return TOKENIZER_NUMBER;
                 else
                     return TOKENIZER_ERROR;
@@ -328,8 +298,7 @@ static lv_100ask_calc_token_t lv_100ask_calc_get_next_token(lv_obj_t *obj)
     }
 
     // Delimiter
-    else if (lv_100ask_calc_siglechar(calc->curr_char))
-    {
+    else if(lv_100ask_calc_siglechar(calc->curr_char)) {
         calc->next_char++;
         return lv_100ask_calc_siglechar(calc->curr_char);
     }
@@ -337,43 +306,32 @@ static lv_100ask_calc_token_t lv_100ask_calc_get_next_token(lv_obj_t *obj)
     return TOKENIZER_ERROR;
 }
 
-
-
 /**
  * Get single character token type.
  * @param curr_char       Pointer to character
  * @return                Token type
  */
-static lv_100ask_calc_token_t lv_100ask_calc_siglechar(char *curr_char)
+static lv_100ask_calc_token_t lv_100ask_calc_siglechar(char * curr_char)
 {
-    switch (*curr_char)
-    {
-        case '+':
-            return TOKENIZER_PLUS;
-        case '-':
-            return TOKENIZER_MINUS;
-        case '*':
-            return TOKENIZER_ASTR;
-        case '/':
-            return TOKENIZER_SLASH;
-        case '(':
-            return TOKENIZER_LPAREN;
-        case ')':
-            return TOKENIZER_RPAREN;
-        default:
-            break;
+    switch(*curr_char) {
+        case '+': return TOKENIZER_PLUS;
+        case '-': return TOKENIZER_MINUS;
+        case '*': return TOKENIZER_ASTR;
+        case '/': return TOKENIZER_SLASH;
+        case '(': return TOKENIZER_LPAREN;
+        case ')': return TOKENIZER_RPAREN;
+        default: break;
     }
 
     return TOKENIZER_ERROR;
 }
-
 
 /**
  * Calculates the value of the first level priority expression.
  * @param curr_char       pointer to a calc object
  * @return                Calculation results
  */
-static double lv_100ask_calc_expr(lv_obj_t *obj)
+static double lv_100ask_calc_expr(lv_obj_t * obj)
 {
     lv_100ask_calc_t * calc = (lv_100ask_calc_t *)obj;
     double t1, t2 = 0;
@@ -385,21 +343,15 @@ static double lv_100ask_calc_expr(lv_obj_t *obj)
     op = calc->current_token;
 
     // Operators can only be plus or minus (same priority)
-    while (op == TOKENIZER_PLUS || op == TOKENIZER_MINUS)
-    {
+    while(op == TOKENIZER_PLUS || op == TOKENIZER_MINUS) {
         // Next token
         lv_100ask_calc_tokenizer_next(obj);
 
         // Second operand
         t2 = lv_100ask_calc_term(obj);
-        switch ((int)op)
-        {
-            case TOKENIZER_PLUS:
-                t1 = t1 + t2;
-                break;
-            case TOKENIZER_MINUS:
-                t1 = t1 - t2;
-                break;
+        switch((int)op) {
+            case TOKENIZER_PLUS: t1 = t1 + t2; break;
+            case TOKENIZER_MINUS: t1 = t1 - t2; break;
         }
         op = calc->current_token;
     }
@@ -407,13 +359,12 @@ static double lv_100ask_calc_expr(lv_obj_t *obj)
     return t1;
 }
 
-
 /**
  * Calculates the value of the second level priority (multiplication and division) expression.
  * @param curr_char       pointer to a calc object
  * @return                Calculation results
  */
-static double lv_100ask_calc_term(lv_obj_t *obj)
+static double lv_100ask_calc_term(lv_obj_t * obj)
 {
     lv_100ask_calc_t * calc = (lv_100ask_calc_t *)obj;
     double f1, f2;
@@ -426,21 +377,19 @@ static double lv_100ask_calc_term(lv_obj_t *obj)
     op = calc->current_token;
 
     // Operators can only be multiply or divide (same priority)
-    while (op == TOKENIZER_ASTR || op == TOKENIZER_SLASH)
-    {
+    while(op == TOKENIZER_ASTR || op == TOKENIZER_SLASH) {
         // Next token
         lv_100ask_calc_tokenizer_next(obj);
-        
+
         // Get right operand (factor)
         f2 = lv_100ask_calc_factor(obj);
-        switch ((int)op)
-        {
-            case TOKENIZER_ASTR:
-                f1 = f1 * f2;
-                break;
+        switch((int)op) {
+            case TOKENIZER_ASTR: f1 = f1 * f2; break;
             case TOKENIZER_SLASH:
-                if(f2 != 0) f1 = f1 / f2;
-                else f1 = 0;
+                if(f2 != 0)
+                    f1 = f1 / f2;
+                else
+                    f1 = 0;
                 break;
         }
         // The value calculated above will be used as the left operand
@@ -450,22 +399,20 @@ static double lv_100ask_calc_term(lv_obj_t *obj)
     return f1;
 }
 
-
 /**
- * Get the value of the current factor. 
- * If the current factor (similar to m in the above formula) is an expression, 
+ * Get the value of the current factor.
+ * If the current factor (similar to m in the above formula) is an expression,
  * perform recursive evaluation
  * @param curr_char       pointer to a calc object
  * @return                Value of factor
  */
-static double lv_100ask_calc_factor(lv_obj_t *obj)
+static double lv_100ask_calc_factor(lv_obj_t * obj)
 {
-    double r = 0;
+    double r                = 0;
     lv_100ask_calc_t * calc = (lv_100ask_calc_t *)obj;
 
     // Type of current token
-    switch (calc->current_token)
-    {
+    switch(calc->current_token) {
         // Number (Terminator)
         case TOKENIZER_NUMBER:
             // Convert it from ASCII to numeric value
@@ -476,49 +423,44 @@ static double lv_100ask_calc_factor(lv_obj_t *obj)
         // left bracket
         case TOKENIZER_LPAREN:
             lv_100ask_calc_accept(obj, TOKENIZER_LPAREN);
-            // Treat the value in parentheses as a new expression and calculate recursively (recursion starts with function expr())
+            // Treat the value in parentheses as a new expression and calculate recursively (recursion starts with
+            // function expr())
             r = lv_100ask_calc_expr(obj);
             // When the expression in the bracket is processed, the next token must be the right bracket
             lv_100ask_calc_accept(obj, TOKENIZER_RPAREN);
             break;
             // Tokens other than the left parenthesis and numbers have been disposed of by the upper level
             // If there is a token, it must be an expression syntax error
-        default:
-            lv_100ask_calc_error(calc->error_code, syntax_error);
+        default: lv_100ask_calc_error(calc->error_code, syntax_error);
     }
 
     // Returns the value of the factor
     return r;
 }
 
-
 /**
  * Convert it from ASCII to numeric value.
  * @param curr_char       Pointer to character
  * @return                Result of conversion to integer
  */
-static double lv_100ask_calc_tokenizer_num(char *curr_char)
+static double lv_100ask_calc_tokenizer_num(char * curr_char)
 {
     return atof(curr_char);
 }
-
 
 /**
  * Match the current token according to syntax rules.
  * @param curr_char       pointer to a calc object
  * @param token           token
  */
-static void lv_100ask_calc_accept(lv_obj_t *obj, lv_100ask_calc_token_t token)
+static void lv_100ask_calc_accept(lv_obj_t * obj, lv_100ask_calc_token_t token)
 {
     lv_100ask_calc_t * calc = (lv_100ask_calc_t *)obj;
 
-    if (token != calc->current_token)
-        lv_100ask_calc_error(calc->error_code, syntax_error);
+    if(token != calc->current_token) lv_100ask_calc_error(calc->error_code, syntax_error);
 
     lv_100ask_calc_tokenizer_next(obj);
 }
-
-
 
 /**
  * Set error code.
@@ -532,24 +474,21 @@ static void lv_100ask_calc_error(lv_100ask_calc_error_t error_code, lv_100ask_ca
     LV_UNUSED(error_code);
 }
 
-
 /**
  * Parse next token.
  * @param error_code       pointer to a calc object
  */
-static void lv_100ask_calc_tokenizer_next(lv_obj_t *obj)
+static void lv_100ask_calc_tokenizer_next(lv_obj_t * obj)
 {
     lv_100ask_calc_t * calc = (lv_100ask_calc_t *)obj;
 
-    if (lv_100ask_calc_tokenizer_finished(calc->current_token, calc->curr_char))
-        return;
+    if(lv_100ask_calc_tokenizer_finished(calc->current_token, calc->curr_char)) return;
 
-    calc->curr_char = calc->next_char;
+    calc->curr_char     = calc->next_char;
     calc->current_token = lv_100ask_calc_get_next_token(obj);
 
     return;
 }
-
 
 /**
  * Judge whether the token has reached the end.
@@ -558,10 +497,9 @@ static void lv_100ask_calc_tokenizer_next(lv_obj_t *obj)
  * @return                true:  There are no tokens to parse
  *                        false: There are tokens that need to be resolved
  */
-static bool lv_100ask_calc_tokenizer_finished(lv_100ask_calc_token_t current_token, char *curr_char)
+static bool lv_100ask_calc_tokenizer_finished(lv_100ask_calc_token_t current_token, char * curr_char)
 {
     return *curr_char == '\0' || current_token == TOKENIZER_ENDOFINPUT;
 }
 
-
-#endif  /*LV_USE_100ASK_CALC*/
+#endif /*LV_USE_100ASK_CALC*/

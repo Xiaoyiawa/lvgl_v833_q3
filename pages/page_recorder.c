@@ -1,12 +1,4 @@
 #include "page_recorder.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <time.h>
-#include <sys/stat.h>
-#include <sys/statfs.h>
-#include <errno.h>
 
 #define RECORDER_DEBUG(fmt, ...) printf("[Recorder] " fmt "\n", ##__VA_ARGS__)
 

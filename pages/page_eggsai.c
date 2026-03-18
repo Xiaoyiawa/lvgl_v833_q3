@@ -13,48 +13,46 @@
  */
 
 #include "page_eggsai.h"
-#include "../lvgl/lvgl.h"
-#include "../eggsai/eggsai_provider.h"
 
 /*-----------------------------------------------------
  *  Layout constants (pixel values for 240×240)
  *----------------------------------------------------*/
-#define SCREEN_W          240
-#define SCREEN_H          240
+#define SCREEN_W 240
+#define SCREEN_H 240
 
-#define TOP_BAR_H         30
-#define BOTTOM_BAR_H      34
-#define GAP               2
-#define KB_H              110
+#define TOP_BAR_H 30
+#define BOTTOM_BAR_H 34
+#define GAP 2
+#define KB_H 110
 
 /* Normal (keyboard hidden) positions */
-#define CHAT_Y            (TOP_BAR_H + GAP)                                   /* 32 */
-#define BOTTOM_Y_NORMAL   (SCREEN_H - BOTTOM_BAR_H)                          /* 206 */
-#define CHAT_H_NORMAL     (BOTTOM_Y_NORMAL - GAP - CHAT_Y)                   /* 172 */
+#define CHAT_Y (TOP_BAR_H + GAP)                       /* 32 */
+#define BOTTOM_Y_NORMAL (SCREEN_H - BOTTOM_BAR_H)      /* 206 */
+#define CHAT_H_NORMAL (BOTTOM_Y_NORMAL - GAP - CHAT_Y) /* 172 */
 
 /* Keyboard-shown positions */
-#define KB_Y              (SCREEN_H - KB_H)                                   /* 130 */
-#define BOTTOM_Y_KB       (KB_Y - BOTTOM_BAR_H)                              /* 96 */
-#define CHAT_H_KB         (BOTTOM_Y_KB - GAP - CHAT_Y)                       /* 62 */
+#define KB_Y (SCREEN_H - KB_H)                 /* 130 */
+#define BOTTOM_Y_KB (KB_Y - BOTTOM_BAR_H)      /* 96 */
+#define CHAT_H_KB (BOTTOM_Y_KB - GAP - CHAT_Y) /* 62 */
 
-#define BACK_BTN_W        30
-#define SEND_BTN_W        50
+#define BACK_BTN_W 30
+#define SEND_BTN_W 50
 
 /*-----------------------------------------------------
  *  Static state
  *----------------------------------------------------*/
-static EggsaiProvider * s_provider  = NULL;
-static int              s_model_idx = 0;
+static EggsaiProvider * s_provider = NULL;
+static int s_model_idx             = 0;
 
 static lv_obj_t * s_screen     = NULL;
-static lv_obj_t * s_chat_ta    = NULL;   /* chat display textarea */
-static lv_obj_t * s_input_ta   = NULL;   /* user input textarea */
+static lv_obj_t * s_chat_ta    = NULL; /* chat display textarea */
+static lv_obj_t * s_input_ta   = NULL; /* user input textarea */
 static lv_obj_t * s_send_btn   = NULL;
 static lv_obj_t * s_dropdown   = NULL;
 static lv_obj_t * s_keyboard   = NULL;
-static lv_obj_t * s_kb_overlay = NULL;   /* transparent overlay to catch clicks outside kb */
-static bool       s_waiting    = false;  /* true while waiting for API response */
-static bool       s_kb_shown   = false;  /* true while keyboard is visible */
+static lv_obj_t * s_kb_overlay = NULL;  /* transparent overlay to catch clicks outside kb */
+static bool s_waiting          = false; /* true while waiting for API response */
+static bool s_kb_shown         = false; /* true while keyboard is visible */
 
 /*-----------------------------------------------------
  *  Forward declarations
@@ -77,9 +75,9 @@ static void chat_append(const char * text)
     if(!s_chat_ta) return;
 
     const char * old = lv_textarea_get_text(s_chat_ta);
-    size_t old_len = strlen(old);
-    size_t add_len = strlen(text);
-    size_t new_len = old_len + add_len + 2;
+    size_t old_len   = strlen(old);
+    size_t add_len   = strlen(text);
+    size_t new_len   = old_len + add_len + 2;
 
     char * buf = malloc(new_len);
     if(!buf) return;
@@ -108,7 +106,7 @@ static void show_keyboard(void)
     /* Show keyboard & overlay */
     lv_obj_clear_flag(s_keyboard, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(s_kb_overlay, LV_OBJ_FLAG_HIDDEN);
-    
+
     /* Move overlay to foreground, then input box, then keyboard.
      * This leaves the Send button and Chat area behind the overlay.
      * So clicking Send will hit the overlay and hide the keyboard. */
@@ -122,7 +120,7 @@ static void show_keyboard(void)
 
     /* Shrink chat area */
     lv_obj_set_size(s_chat_ta, SCREEN_W, CHAT_H_KB);
-    
+
     /* Focus the text area */
     lv_obj_add_state(s_input_ta, LV_STATE_FOCUSED);
 }
@@ -158,7 +156,7 @@ static lv_obj_t * page_eggsai_obj(void)
 {
     /* ---- Root container (full screen) ---- */
     lv_obj_t * screen = lv_obj_create(lv_scr_act());
-    s_screen = screen;
+    s_screen          = screen;
     lv_obj_set_size(screen, SCREEN_W, SCREEN_H);
     lv_obj_set_pos(screen, 0, 0);
     lv_obj_set_style_pad_all(screen, 0, 0);
@@ -172,8 +170,8 @@ static lv_obj_t * page_eggsai_obj(void)
     s_provider = eggsai_provider_get_default();
     s_provider->load_configs(s_provider);
     s_model_idx = 0;
-    s_waiting = false;
-    s_kb_shown = false;
+    s_waiting   = false;
+    s_kb_shown  = false;
 
     /* ============================================================
      *  TOP BAR  (y=0, h=TOP_BAR_H)
@@ -194,7 +192,7 @@ static lv_obj_t * page_eggsai_obj(void)
     s_dropdown = lv_dropdown_create(screen);
     lv_obj_set_pos(s_dropdown, BACK_BTN_W + GAP, 0);
     lv_obj_set_size(s_dropdown, SCREEN_W - BACK_BTN_W - GAP, TOP_BAR_H);
-    
+
     /* Ensure border covers the dropdown clearly and uniformly */
     lv_obj_set_style_border_width(s_dropdown, 1, 0);
     lv_obj_set_style_border_color(s_dropdown, lv_color_hex(0x888888), 0);
@@ -244,7 +242,7 @@ static lv_obj_t * page_eggsai_obj(void)
     s_kb_overlay = lv_obj_create(screen);
     lv_obj_set_size(s_kb_overlay, SCREEN_W, SCREEN_H);
     lv_obj_set_pos(s_kb_overlay, 0, 0);
-    
+
     /* Transparent overaly per user request */
     lv_obj_set_style_bg_opa(s_kb_overlay, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(s_kb_overlay, 0, 0);
@@ -252,7 +250,7 @@ static lv_obj_t * page_eggsai_obj(void)
     lv_obj_clear_flag(s_kb_overlay, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(s_kb_overlay, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_flag(s_kb_overlay, LV_OBJ_FLAG_HIDDEN);
-    
+
     /* Hide keyboard when overlay clicked */
     lv_obj_add_event_cb(s_kb_overlay, overlay_click_cb, LV_EVENT_CLICKED, NULL);
 
@@ -279,7 +277,7 @@ static lv_obj_t * page_eggsai_obj(void)
     lv_textarea_set_text(s_input_ta, "");
     lv_textarea_set_one_line(s_input_ta, true);
     lv_textarea_set_placeholder_text(s_input_ta, "Ask something...");
-    
+
     lv_obj_set_style_border_width(s_input_ta, 1, 0);
     lv_obj_set_style_border_color(s_input_ta, lv_color_hex(0x888888), 0);
     lv_obj_set_style_radius(s_input_ta, 4, 0);
@@ -370,8 +368,7 @@ static void send_btn_cb(lv_event_t * e)
     chat_append("AI: ...");
     s_waiting = true;
 
-    if(!s_provider || s_provider->send_message(s_provider, s_model_idx, msg_copy,
-                                               on_ai_response, NULL) != 0) {
+    if(!s_provider || s_provider->send_message(s_provider, s_model_idx, msg_copy, on_ai_response, NULL) != 0) {
         chat_append("Error: Failed to send message");
         s_waiting = false;
     }
@@ -391,9 +388,9 @@ static void on_ai_response(const char * response, bool success, void * user_data
         char ai_buf[EGGSAI_RESPONSE_MAX_LEN + 8];
         snprintf(ai_buf, sizeof(ai_buf), "AI: %s", response);
 
-        const char * old = lv_textarea_get_text(s_chat_ta);
+        const char * old         = lv_textarea_get_text(s_chat_ta);
         const char * placeholder = "AI: ...";
-        const char * last_ph = NULL;
+        const char * last_ph     = NULL;
 
         const char * p = old;
         while((p = strstr(p, placeholder)) != NULL) {
@@ -403,16 +400,15 @@ static void on_ai_response(const char * response, bool success, void * user_data
 
         if(last_ph) {
             size_t prefix_len = last_ph - old;
-            size_t reply_len = strlen(ai_buf);
+            size_t reply_len  = strlen(ai_buf);
             size_t suffix_len = strlen(last_ph + strlen(placeholder));
-            size_t total = prefix_len + reply_len + suffix_len + 1;
+            size_t total      = prefix_len + reply_len + suffix_len + 1;
 
             char * buf = malloc(total);
             if(buf) {
                 memcpy(buf, old, prefix_len);
                 memcpy(buf + prefix_len, ai_buf, reply_len);
-                memcpy(buf + prefix_len + reply_len,
-                       last_ph + strlen(placeholder), suffix_len);
+                memcpy(buf + prefix_len + reply_len, last_ph + strlen(placeholder), suffix_len);
                 buf[prefix_len + reply_len + suffix_len] = '\0';
                 lv_textarea_set_text(s_chat_ta, buf);
                 free(buf);

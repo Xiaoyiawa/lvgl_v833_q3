@@ -59,8 +59,9 @@ static void explorer_event_handler(lv_event_t * e)
         }
 
         if(str_end_with(file_name, ".txt", false) || str_end_with(file_name, ".json", false) ||
-           str_end_with(file_name, ".conf", false)) {
-            page_open(page_txt(file_name));
+           str_end_with(file_name, ".conf", false) || str_end_with(file_name, ".log", false) ||
+           str_end_with(file_name, ".md", false)) {
+            page_open(page_txt_create(file_name));
         }
     }
 }

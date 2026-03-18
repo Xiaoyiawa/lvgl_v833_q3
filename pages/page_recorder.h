@@ -9,6 +9,14 @@ extern "C" {
 #include "../lv_lib_100ask/lv_lib_100ask.h"
 #include "page_manager.h"
 #include "platform/alsa_rec.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <sys/statfs.h>
+#include <errno.h>
 
 BasePage * recorder_page_create(void);
 
