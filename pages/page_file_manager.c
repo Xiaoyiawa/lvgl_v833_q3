@@ -60,7 +60,8 @@ static void explorer_event_handler(lv_event_t * e)
 
         if(str_end_with(file_name, ".txt", false) || str_end_with(file_name, ".json", false) ||
            str_end_with(file_name, ".conf", false) || str_end_with(file_name, ".log", false) ||
-           str_end_with(file_name, ".md", false)) {
+           str_end_with(file_name, ".md", false) || str_end_with(file_name, ".sh", false) || 
+           str_end_with(file_name, ".c", false) || str_end_with(file_name, ".h", false)) {
             page_open(page_txt_create(file_name));
         }
     }

@@ -6,6 +6,10 @@
 extern "C" {
 #endif
 
+/*********************
+ *      INCLUDES
+ *********************/
+ 
 #include "../lvgl/lvgl.h"
 #include "page_manager.h"
 #include <stdio.h>

@@ -4,6 +4,23 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <alsa/asoundlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <errno.h>
+#include <time.h>
+#include <sys/stat.h>
+
+// FFmpeg 头文件
+#include <libavcodec/avcodec.h>
+#include <libavutil/avutil.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/samplefmt.h>
+#include <libswresample/swresample.h>
+
+#define ALSA_REC_DEBUG(fmt, ...) printf("[ALSA REC] " fmt "\n", ##__VA_ARGS__)
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,21 +1,11 @@
+/*
+* 一个基于alsa的录音机
+* 这玩意没少折腾我
+* 默认输出的wav文件不完整
+* 只能用ffmpeg重新编码成mp3了
+*/
+
 #include "alsa_rec.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <errno.h>
-#include <time.h>
-#include <sys/stat.h>
-
-// FFmpeg 头文件
-#include <libavcodec/avcodec.h>
-#include <libavutil/avutil.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/samplefmt.h>
-#include <libswresample/swresample.h>
-
-#define ALSA_REC_DEBUG(fmt, ...) printf("[ALSA REC] " fmt "\n", ##__VA_ARGS__)
 
 struct AlsaRecorder
 {

@@ -1,12 +1,4 @@
 #include "eggsai_provider.h"
-#include "../cJSON/cJSON.h"
-#include "../lvgl/lvgl.h" /* for lv_async_call */
-#include <curl/curl.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <dirent.h>
 
 /* Forward declare the generic provider singleton */
 static EggsaiProvider s_generic_provider;
