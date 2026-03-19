@@ -16,11 +16,11 @@
 
 //请教DeepSeek实现了简易页面管理器，100ask那个实际上不太好用……
 #include "pages/page_manager.h"
-#include "pages/page_demo.h"
-#include "pages/page_calculator.h"
+#include "pages/page_main.h"
 
 /*
-#include "pages/page_main.h"
+#include "pages/page_demo.h"
+#include "pages/page_calculator.h"
 #include "pages/page_audio.h"
 #include "pages/page_file_manager.h"
 #include "pages/page_apple.h"
