@@ -19,7 +19,7 @@ static void slider_progress_released(lv_event_t * e);
 static void slider_volume_changed(lv_event_t * e);
 static void touch_clicked(lv_event_t * e);
 static void control_click(lv_event_t * e);
-static void timer_tick(lv_event_t * e);
+static void timer_tick(lv_timer_t * e);
 static void player_finished(void * p);
 static void page_video_destroy(void * p);
 
@@ -174,7 +174,7 @@ static void touch_clicked(lv_event_t * e)
     }
 }
 
-static void timer_tick(lv_event_t * e)
+static void timer_tick(lv_timer_t * e)
 {
     VideoPage * page = (VideoPage *)e->user_data;
     if(!page || !page->player) return;

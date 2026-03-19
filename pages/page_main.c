@@ -11,12 +11,12 @@ static void btn_file_manager_click(lv_event_t * e);
 static void btn_calculator_click(lv_event_t * e);
 static void btn_bird_click(lv_event_t * e);
 static void btn_ftp_click(lv_event_t * e);
-static void timer_time_tick(lv_event_t * e);
-static void timer_battery_tick(lv_event_t * e);
+static void timer_time_tick(lv_timer_t * e);
+static void timer_battery_tick(lv_timer_t * e);
 
 BasePage * main_page_create()
 {
-    MainPage * page = base_page_create(page_main(), NULL, NULL);
+    MainPage * page = base_page_create(page_main());
 }
 
 lv_obj_t * page_main()
@@ -124,7 +124,7 @@ static void btn_ftp_click(lv_event_t * e)
     page_open_obj(page_ftp());
 }
 
-static void timer_time_tick(lv_event_t * e)
+static void timer_time_tick(lv_timer_t * e)
 {
     char * time_text[24];
     struct timeval tv;
@@ -140,7 +140,7 @@ static void timer_time_tick(lv_event_t * e)
 
 }
 
-static void timer_battery_tick(lv_event_t * e)
+static void timer_battery_tick(lv_timer_t * e)
 {
     char * battery_text[24];
     int capacity;

@@ -28,6 +28,7 @@ typedef struct
 } BirdPage;
 
 #define BIRD_WIDTH 36
+#define BIRD_WIDTH_DELTA 6
 #define BIRD_HEIGHT 24
 #define TUBE_WIDTH 56
 #define TUBE_HEIGHT 480
@@ -36,23 +37,24 @@ typedef struct
 #define BIRD_Y_INIT 135
 #define TUBE_AX_INIT LV_SCR_WIDTH
 #define TUBE_BX_INIT LV_SCR_WIDTH * 1.5 + TUBE_WIDTH * 0.5
-#define RAND_MIN (LV_SCR_HEIGHT - GAP_HEIGHT) * 0.25
-#define RAND_MAX (LV_SCR_HEIGHT - GAP_HEIGHT) * 0.75
+#define TUBE_RAND_MIN (LV_SCR_HEIGHT - GAP_HEIGHT) * 0.25
+#define TUBE_RAND_MAX (LV_SCR_HEIGHT - GAP_HEIGHT) * 0.75
 
 static lv_obj_t * page_bird_obj(BirdPage * page);
-static void page_bird_destroy(BasePage * p);
+static void page_bird_destroy(void * p);
 
 static void back_click(lv_event_t * e);
 static void touch_pressed(lv_event_t * e);
 static void restart_click(lv_event_t * e);
-static void timer_move_tick(lv_event_t * e);
+static void timer_move_tick(lv_timer_t * e);
 static void game_init(BirdPage * page);
 static void game_score(BirdPage * page);
 static void game_stop(BirdPage * page);
+static bool page_bird_on_key(void * p, key_code_t key_code, key_action_t key_action);
 
 static int rand_between(int start, int end);
 
-BasePage * page_bird_create()
+BasePage * page_bird_create(void)
 {
     BirdPage * page = malloc(sizeof(BirdPage));
     if(!page) return NULL;
@@ -60,7 +62,8 @@ BasePage * page_bird_create()
 
     page->base.obj        = page_bird_obj(page);
     page->base.on_destroy = page_bird_destroy;
-    return page;
+    page->base.on_key     = page_bird_on_key;
+    return (BasePage *)page;
 }
 
 static lv_obj_t * page_bird_obj(BirdPage * page)
@@ -149,9 +152,9 @@ static lv_obj_t * page_bird_obj(BirdPage * page)
     return screen;
 }
 
-static void timer_move_tick(lv_event_t * e)
+static void timer_move_tick(lv_timer_t * t)
 {
-    BirdPage * page = (BirdPage *)e->user_data;
+    BirdPage * page = (BirdPage *)t->user_data;
     if(!page) return;
 
     // 下方Y坐标均以屏幕底部为零点
@@ -180,12 +183,12 @@ static void timer_move_tick(lv_event_t * e)
 
     if(tubeAX < -TUBE_WIDTH) {
         tubeAX            = LV_SCR_WIDTH;
-        tubeAY            = rand_between(RAND_MIN, RAND_MAX);
+        tubeAY            = rand_between(TUBE_RAND_MIN, TUBE_RAND_MAX);
         page->tubeAScored = false;
     }
     if(tubeBX < -TUBE_WIDTH) {
         tubeBX            = LV_SCR_WIDTH;
-        tubeBY            = rand_between(RAND_MIN, RAND_MAX);
+        tubeBY            = rand_between(TUBE_RAND_MIN, TUBE_RAND_MAX);
         page->tubeBScored = false;
     }
 
@@ -202,7 +205,7 @@ static void timer_move_tick(lv_event_t * e)
     lv_obj_set_pos(tubeB, tubeBX, -TUBE_HEIGHT + LV_SCR_HEIGHT + (TUBE_HEIGHT - GAP_HEIGHT) / 2 - tubeBY);
 
     if(!page->over) {
-        if(BIRD_X - TUBE_WIDTH < tubeAX && tubeAX < BIRD_X + BIRD_WIDTH) {
+        if(BIRD_X - TUBE_WIDTH + BIRD_WIDTH_DELTA < tubeAX && tubeAX < BIRD_X + BIRD_WIDTH - BIRD_WIDTH_DELTA) {
             if(!(tubeAY < birdY - BIRD_HEIGHT && tubeAY + GAP_HEIGHT > birdY)) {
                 page->over = true;
             }
@@ -212,7 +215,7 @@ static void timer_move_tick(lv_event_t * e)
             game_score(page);
         }
 
-        if(BIRD_X - TUBE_WIDTH < tubeBX && tubeBX < BIRD_X + BIRD_WIDTH) {
+        if(BIRD_X - TUBE_WIDTH + BIRD_WIDTH_DELTA < tubeBX && tubeBX < BIRD_X + BIRD_WIDTH - BIRD_WIDTH_DELTA) {
             if(!(tubeBY < birdY - BIRD_HEIGHT && tubeBY + GAP_HEIGHT > birdY)) {
                 page->over = true;
             }
@@ -242,8 +245,8 @@ static void game_init(BirdPage * page)
 
     page->tubeAX      = TUBE_AX_INIT;
     page->tubeBX      = TUBE_BX_INIT;
-    page->tubeAY      = rand_between(RAND_MIN, RAND_MAX);
-    page->tubeBY      = rand_between(RAND_MIN, RAND_MAX);
+    page->tubeAY      = rand_between(TUBE_RAND_MIN, TUBE_RAND_MAX);
+    page->tubeBY      = rand_between(TUBE_RAND_MIN, TUBE_RAND_MAX);
     page->tubeAScored = false;
     page->tubeBScored = false;
 
@@ -298,12 +301,40 @@ static void touch_pressed(lv_event_t * e)
     }
 }
 
+static bool page_bird_on_key(void * p, key_code_t key_code, key_action_t key_action)
+{
+    if(!p) return false;
+    if(key_code != KEY_CODE_HOME) return false;
+    if(key_action != KEY_ACTION_DOWN) return true;
+
+    BirdPage * page = (BirdPage *)p;
+
+    if(!page->over) {
+        if(!page->started) {
+            lv_obj_add_flag(page->img_tap, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(page->img_logo, LV_OBJ_FLAG_HIDDEN);
+            page->started = true;
+            lv_timer_resume(page->timer_move);
+        }
+        page->birdSpeed = 10;
+    } 
+    else if(!page->started) {
+        lv_obj_add_flag(page->img_over, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(page->btn_restart, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(page->img_tap, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(page->img_logo, LV_OBJ_FLAG_HIDDEN);
+
+        game_init(page);
+    }
+    return true;
+}
+
 static void back_click(lv_event_t * e)
 {
     page_back();
 }
 
-static void page_bird_destroy(BasePage * p)
+static void page_bird_destroy(void * p)
 {
     BirdPage * page = (BirdPage *)p;
     if(!page) return;

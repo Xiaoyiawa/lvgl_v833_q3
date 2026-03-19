@@ -1,14 +1,11 @@
-#include "lvgl/lvgl.h"
+#include "main.h"
+
 #include "lvgl/demos/lv_demos.h"
 #include "lv_drivers/display/fbdev.h"
 #include "lv_drivers/indev/evdev.h"
 #include "lv_lib_100ask/lv_lib_100ask.h"
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <fcntl.h>
 #include <linux/fb.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>
 #include <time.h>
@@ -31,36 +28,20 @@
 #include "pages/page_ftp.h"
 */
 
-#define DISP_BUF_SIZE (LV_SCR_WIDTH * LV_SCR_HEIGHT)
-
-#define PATH_MAX_LENGTH 256
-extern char homepath[PATH_MAX_LENGTH] = {0};
-
-extern int dispd  = 0;     // 背光
-extern int fbd    = 0;     // 帧缓冲设备
-extern int powerd = 0;     //电源按钮
-extern int homed  = 0;     // 主页按钮
 struct fb_var_screeninfo * vinfo;  //屏幕参数
 
-extern uint32_t sleepTs      = -1;
-extern uint32_t homeClickTs = -1;
-extern uint32_t backgroundTs = -1;
+char homepath[PATH_MAX_LENGTH];
 
-extern bool deepSleep  = false;
-extern bool dontDeepSleep  = false;
+int dispd;  // 背光
+int fbd;    // 帧缓冲设备
+int powerd; // 电源按钮
+int homed;  // 主页按钮
 
-extern void lcdBrightness(int brightness);
-extern void sysSleep(void);
-extern void sysWake(void);
-extern void sysDeepSleep(void);
-extern void setDontDeepSleep(bool b);
-extern void switchRobot(void);
-extern void switchBackground(void);
-extern void switchForeground(void);
+uint32_t sleepTs;
+uint32_t homeClickTs;
+uint32_t backgroundTs;
 
-extern lv_style_t getFontStyle(const char * filename, uint16_t weight, uint16_t style);
-
-extern uint32_t tick_get(void);
+bool dontDeepSleep;
 
 void readKeyPower(void);
 void readKeyHome(void);
@@ -75,8 +56,13 @@ static lv_style_t style_default;
 
 int main(int argc, char *argv[])
 {
-	
-	printf("ciallo lvgl\n");
+    // 初始化变量
+    sleepTs      = -1;
+    homeClickTs  = -1;
+    backgroundTs = -1;
+    dontDeepSleep = false;
+
+    printf("ciallo lvgl\n");
 	#if LV_USE_PERF_MONITOR
 	printf("monitor on\n");
 	#endif
@@ -197,7 +183,7 @@ int main(int argc, char *argv[])
                 if(dontDeepSleep) 
                     sleepTs = tick_get();
 
-                else if(!deepSleep && tick_get() - sleepTs >= 60000) 
+                else if(tick_get() - sleepTs >= 60000) 
                     sysDeepSleep();
                 
                 usleep(25000);
@@ -215,7 +201,9 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-/*Set in lv_conf.h as `LV_TICK_CUSTOM_SYS_TIME_EXPR`*/
+/**
+ * 获取时间
+ */
 uint32_t tick_get(void)
 {
     static uint32_t start_ms = 0;
@@ -234,6 +222,9 @@ uint32_t tick_get(void)
     return time_ms;
 }
 
+/**
+ * 初始化LCD，设置旋转方向
+ */
 void lcdInit(void)
 {
     vinfo = fbdev_get_vinfo();
@@ -241,6 +232,9 @@ void lcdInit(void)
     ioctl(fbd, 0x4601u, vinfo);
 }
 
+/**
+ * 点亮LCD
+ */
 void lcdOpen(void) {
     int buffer[8] = {0};
     buffer[1] = 1;
@@ -248,12 +242,18 @@ void lcdOpen(void) {
     printf("[lcd]opened\n");
 }
 
+/**
+ * 熄灭LCD
+ */
 void lcdClose(void) {
     int buffer[8] = {0};
     ioctl(dispd, 0xFu, buffer);
     printf("[lcd]closed\n");
 }
 
+/**
+ * 启用触摸
+ */
 void touchOpen(void) {
 	int tpd = open("/proc/sprocomm_tpInfo", 526338);
     write(tpd, "1", 1u);
@@ -261,6 +261,9 @@ void touchOpen(void) {
     printf("[tp]opened\n");
 }
 
+/**
+ * 关闭触摸
+ */
 void touchClose(void) {
     int tpd = open("/proc/sprocomm_tpInfo", 526338);
     write(tpd, "0", 1u);
@@ -268,86 +271,109 @@ void touchClose(void) {
     printf("[tp]closed\n");
 }
 
+/**
+ * LCD刷屏
+ */
 void lcdRefresh(void) {
     ioctl(fbd, 0x4606u, vinfo);
 }
 
+/**
+ * 设置LCD背光亮度
+ */
 void lcdBrightness(int brightness) {
 	int buffer[8] = {0};
     buffer[1] = brightness;
 	ioctl(dispd, 0x102u, buffer);
 }
 
+/**
+ * 读取电源按钮
+ */
 void readKeyPower(void) {
     char buffer[16] = {0};
     while (read(powerd, buffer, 0x10u) > 0) {
 		if(buffer[10] != 0x74) return;
 
 		if(buffer[12] == 0x00) {
-			printf("[key]power_up\n");
-			if(sleepTs == -1 && !deepSleep) {
-				sysSleep();
-			}
-			else {
-				sysWake();
-			}
-		}
-		else {
-			printf("[key]power_down\n");
-		}
-	}
+            printf("[key]power_up\n");
+            if(sleepTs == -1)
+                if(page_on_key(KEY_CODE_POWER, KEY_ACTION_UP)) continue;
+            // 如果页面处理了按键事件，就不继续执行了
+
+            if(sleepTs == -1)     sysSleep();     // 没睡的给我睡
+			else                  sysWake();      // 睡着的起来
+
+        } else if(buffer[12] == 0x01) {
+            printf("[key]power_down\n");
+
+            if(sleepTs == -1)
+                if(page_on_key(KEY_CODE_POWER, KEY_ACTION_DOWN)) continue;
+        }
+    }
 }
 
+/**
+ * 读取圆形HOME按钮
+ */
 void readKeyHome(void) {
 	char buffer[16] = {0};
 	while (read(homed, buffer, 0x10u) > 0) {
 		if(buffer[10] != 0x73) return;
 
-		if(buffer[12] == 0x00) {
-			printf("[key]home_up\n");
+        if(buffer[12] == 0x00) {
+            printf("[key]home_up\n");
+            if(sleepTs == -1) 
+                if(page_on_key(KEY_CODE_HOME, KEY_ACTION_UP)) continue;
+            // 如果页面处理了按键事件，就不继续执行了
+
             uint32_t ts = tick_get();
             if(homeClickTs != -1 && ts - homeClickTs <= 300){
                 switchForeground();
                 homeClickTs = -1;
             } else {
                 homeClickTs = ts;
-                if (sleepTs == -1) {
-                    page_back();
-                }
-                else {
-                    sysWake();
-                }
+                if (sleepTs == -1)      page_back();    // 没睡的返回
+                else                    sysWake();      // 睡着的起来
             }
-        } else {
+        } else if(buffer[12] == 0x01) {
             printf("[key]home_down\n");
+            if(sleepTs == -1)
+                if(page_on_key(KEY_CODE_HOME, KEY_ACTION_DOWN)) continue;
         }
     }
 }
 
+/**
+ * 熄屏
+ */
 void sysWake(void) {
     if(sleepTs != -1) {
-        deepSleep = false;
         sleepTs   = -1;
         touchOpen();
         lcdOpen();
     }
 }
 
+/**
+ * 亮屏
+ */
 void sysSleep(void) {
     if(sleepTs == -1) {
-        deepSleep = false;
         sleepTs   = tick_get();
         touchClose();
         lcdClose();
     }
 }
 
+/**
+ * 睡死
+ */
 void sysDeepSleep(void) {
     char buffer[16] = {0};
     while(read(powerd, buffer, 0x10u) > 0); // 清空电源键的缓冲区
     while(read(homed, buffer, 0x10u) > 0); // 清空HOME键的缓冲区
 
-    deepSleep = true;
     // 睡死过去，相当省电
     system("echo \"0\" >/sys/class/rtc/rtc0/wakealarm");
     system("echo \"0\" >/sys/class/rtc/rtc0/wakealarm");
@@ -359,10 +385,16 @@ void sysDeepSleep(void) {
     while(read(powerd, buffer, 0x10u) > 0);    //再次清空电源键的缓冲区，因为开机按的电源键也算数
 }
 
+/**
+ * 不许睡！
+ */
 void setDontDeepSleep(bool b){
     dontDeepSleep = b;
 }
 
+/**
+ * 切换到robot程序
+ */
 void switchRobot(void){
     switchBackground();
 
@@ -373,6 +405,9 @@ void switchRobot(void){
     system("sh ./switch_robot");
 }
 
+/**
+ * 进入后台
+ */
 void switchBackground(void){
     if(backgroundTs != -1) return;
     backgroundTs = tick_get();
@@ -382,6 +417,9 @@ void switchBackground(void){
     if(powerd) close(powerd);
 }
 
+/**
+ * 从robot切换回来
+ */
 void switchForeground(void)
 {
     if(backgroundTs == -1) return;
@@ -394,6 +432,9 @@ void switchForeground(void)
     sleep(114514);
 }
 
+/**
+ * 获取字体
+ */
 lv_style_t getFontStyle(const char *filename, uint16_t weight, uint16_t font_style)
 {
     lv_style_t style;
