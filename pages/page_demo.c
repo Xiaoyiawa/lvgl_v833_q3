@@ -12,7 +12,7 @@ BasePage * demo_page_create()
     memset(page, 0, sizeof(DemoPage));
     page->base.obj  = page_demo_obj();
 	*/
-    return base_page_create(page_demo_obj(), NULL, NULL);
+    return base_page_create(page_demo_obj());
 }
 
 static lv_obj_t * page_demo_obj() {

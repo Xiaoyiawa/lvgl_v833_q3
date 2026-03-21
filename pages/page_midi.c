@@ -16,7 +16,7 @@ static lv_obj_t * page_midi_obj(MidiPage * page, char * filename);
 static void back_click(lv_event_t * e);
 static void cycle_click(lv_event_t * e);
 static void control_click(lv_event_t * e);
-static void timer_tick(lv_event_t * e);
+static void timer_tick(lv_timer_t * e);
 static void slider_progress_changed(lv_event_t * e);
 static void slider_progress_released(lv_event_t * e);
 static void slider_volume_changed(lv_event_t * e);
@@ -96,7 +96,7 @@ static lv_obj_t * page_midi_obj(MidiPage * page, char * filename)
     lv_obj_add_event_cb(btn_cycle, cycle_click, LV_EVENT_CLICKED, page);
     page->btn_cycle_label = btn_cycle_label;
 
-    lv_text_clock_t * clock = lv_text_clock_create(screen);
+    lv_obj_t * clock = lv_text_clock_create(screen);
     lv_obj_set_size(clock, lv_pct(100), lv_pct(12));
     lv_obj_align(clock, LV_ALIGN_TOP_MID, 0, lv_pct(3));
     lv_obj_set_style_text_align(clock, LV_TEXT_ALIGN_CENTER, NULL);
@@ -167,8 +167,7 @@ static void slider_volume_changed(lv_event_t * e)
 static void slider_volume_released(lv_event_t * e)
 {}
 
-static void timer_tick(lv_event_t * e)
-{
+static void timer_tick(lv_timer_t * e){
     MidiPage * page = (MidiPage *)e->user_data;
     if(!page->player) return;
     lv_slider_set_value(page->slider_progress, midi_get_position_pct(page->player), LV_ANIM_OFF);
