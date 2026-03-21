@@ -49,3 +49,4 @@ dkms.conf
 /Debug/
 
 demo
+.vscode/

@@ -18,7 +18,7 @@ static void btn_recorder_click(lv_event_t * e);
 
 BasePage * main_page_create()
 {
-    MainPage * page = base_page_create(page_main(), NULL, NULL);
+    MainPage * page = base_page_create(page_main());
 }
 
 lv_obj_t * page_main()

@@ -278,7 +278,7 @@ static lv_obj_t * page_eggsai_obj(void)
 
 BasePage * eggsai_page_create(void)
 {
-    return base_page_create(page_eggsai_obj(), NULL, NULL);
+    return base_page_create(page_eggsai_obj());
 }
 
 /*-----------------------------------------------------
