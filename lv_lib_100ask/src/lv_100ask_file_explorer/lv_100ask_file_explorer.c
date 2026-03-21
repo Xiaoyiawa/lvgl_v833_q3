@@ -620,14 +620,15 @@ static void show_dir(lv_obj_t * obj, char * path)
                   str_end_with(fn, ".mid", false) || str_end_with(fn, ".midi", false)) {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_AUDIO "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "2");
-        } else if(is_end_with(fn, ".mp4", false)) {
+        } else if(str_end_with(fn, ".mp4", false)) {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_VIDEO "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "3");
-        } else if(is_end_with(fn, ".txt", false) || is_end_with(fn, ".md", false) || is_end_with(fn, ".json", false) ||
-                  is_end_with(fn, ".log", false) || is_end_with(fn, ".conf", false)) {
+        } else if(str_end_with(fn, ".txt", false) || str_end_with(fn, ".log", false) ||
+                  str_end_with(fn, ".json", false) || str_end_with(fn, ".md", false) ||
+                  str_end_with(fn, ".conf", false)) {
             lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_TXT "  %s", fn);
             lv_table_set_cell_value(explorer->file_list, index, 1, "4");
-        } else if(is_end_with(fn, ".", false) || is_end_with(fn, "..", false)) {
+        } else if(str_end_with(fn, ".", false) || str_end_with(fn, "..", false)) {
             /*is dir*/
             // lv_table_set_cell_value_fmt(explorer->file_list, index, 0, LV_SYMBOL_DIRECTORY "  %s", fn);
             continue;
